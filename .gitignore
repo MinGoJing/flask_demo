@@ -1,0 +1,7 @@
+# exclude folders
+__*/
+doc/
+
+# exclude file patterns
+*.pyc
+*workspace
