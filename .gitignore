@@ -1,7 +1,20 @@
 # exclude folders
+#
 __*/
-doc/
+build/
+dist/
+sdist/
+develop-eggs/
+eggs/
+.eggs/
+wheels/
+*.egg-info/
+parts/
+var/
+docs/
 
 # exclude file patterns
-*.pyc
+!__init__.py
+*.py[cod]
+*$py.class
 *workspace

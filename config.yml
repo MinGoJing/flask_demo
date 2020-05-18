@@ -1,0 +1,12 @@
+# DEBUG config
+DEBUG: True
+
+DB:
+    MYSQL:
+        HOST: 192.168.2.103
+        PORT: 3306
+        USER: dev_all
+        PASSWORD: xx180922
+        #
+
+LOGGER:
