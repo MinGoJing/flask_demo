@@ -22,12 +22,16 @@ __all__ = ["transaction"]
 
 
 def transaction(session):
+
     def wrapper(func):
         def sub_wrapper(*args, **kwargs):
             try:
                 session.begin(subtransactions=True)
-                func(*args, **kwargs)
+                if ("session" in kwargs):
+                    kwargs["session"] = session
+                ret = func(*args, **kwargs)
                 session.commit()
+                return ret
             except Exception as e:
                 session.rollback()
                 raise e

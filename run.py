@@ -14,9 +14,11 @@
 '''
 
 # py
+import os
+from os import environ
 
 # app
 from app import app
 
 if ("__main__" == __name__):
-    app.run("127.0.0.1", port=8080)
+    app.run("127.0.0.1", port=8088)

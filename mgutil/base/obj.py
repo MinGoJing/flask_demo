@@ -16,15 +16,22 @@
 # py
 
 
-# globals
-g_static_exclude_attrs = ("metadata", "query", "query_class")
+# falsk
+from flask_wtf import FlaskForm
 
 
-#
+# exports
 __all__ = [
     "mgt_c_base_object",
-    "mgt_c_object_from_json"
+    "mgt_c_object",
+    "attr_list",
+    "g_exclude_attrs_from_db_model",
+    "g_exclude_attrs_from_flask_form"
 ]
+
+
+# globals
+from flask_sqlalchemy.model import Model
 
 
 class mgt_c_base_object(object):
@@ -90,38 +97,36 @@ class mgt_c_base_object(object):
                     print("%s%s" % (space, "  [list.end]"))
 
 
-class mgt_c_object_from_json(object):
+# globals
+g_exclude_attrs_from_db_model = ("metadata", "query", "query_class")
+g_exclude_attrs_from_flask_form = ()
+
+
+class mgt_c_object(object):
     # include attribute list, for those attribute who starts with "_"
     # we automatically exclude keys start with "_"
     _include_attr_list = None
     # support attributes, even for those does start with "_".
     _support_attr_list = None
+    #
+    _exclude_attr_list = None
     # while doing __eq__ process, exclude these attributes
     _eq_exclude_attr_list = None
+    # default attribute value dict
+    _default_value_map = None
 
     # user support attribute list, could be reset by reset()
     _user_support_attr_list = None
 
-    def __init__(self, json_obj={}, b_reserve=False):
-        self_attrs = [attr for attr in vars(self)
-                      if (("_" != attr[:1] or attr in self._include_attr_list)
-                          and attr not in g_static_exclude_attrs
-                          )]
-
-        # init
-        for attr in self_attrs:
-            try:
-                setattr(self, attr, None)
-            except Exception as e:
-                print(str(e))
-
-        if (not json_obj or not isinstance(json_obj, dict)):
-            return
-
+    def __init__(self, input_obj={}, b_reserve=False):
         if (self._user_support_attr_list is None):
             self._user_support_attr_list = []
         if (self._include_attr_list is None):
             self._include_attr_list = []
+        if (self._exclude_attr_list is None):
+            self._exclude_attr_list = []
+        if (self._support_attr_list is None):
+            self._support_attr_list = []
         if (self._eq_exclude_attr_list is None):
             self._eq_exclude_attr_list = ["_include_attr_list",
                                           "_support_attr_list",
@@ -130,6 +135,42 @@ class mgt_c_object_from_json(object):
             self._eq_exclude_attr_list += ["_include_attr_list",
                                            "_support_attr_list",
                                            "_eq_exclude_attr_list"]
+        if (self._default_value_map is None):
+            self._default_value_map = {}
+
+        if (not input_obj or (not isinstance(input_obj, dict)
+                              and not (isinstance(input_obj, Model))
+                              and not isinstance(input_obj, FlaskForm))):
+            return
+        elif (isinstance(input_obj, FlaskForm)):
+            if (not self._exclude_attr_list):
+                self._exclude_attr_list = g_exclude_attrs_from_flask_form
+            else:
+                self._exclude_attr_list += list(set(self._exclude_attr_list) &
+                                                set(g_exclude_attrs_from_flask_form))
+        elif (not Model or isinstance(input_obj, Model)):
+            if (not self._exclude_attr_list):
+                self._exclude_attr_list = g_exclude_attrs_from_db_model
+            else:
+                self._exclude_attr_list += list(set(self._exclude_attr_list) &
+                                                set(g_exclude_attrs_from_db_model))
+
+        # init attrs None
+        for attr in self.attrs:
+            try:
+                setattr(self, attr, self._default_value_map.get(attr))
+            except Exception as e:
+                print(str(e))
+
+        # set value
+        if (isinstance(input_obj, dict)):
+            self._local_json_init(input_obj, b_reserve)
+        elif (isinstance(input_obj, Model)):
+            self._local_model_init(input_obj, b_reserve)
+        elif (isinstance(input_obj, FlaskForm)):
+            self._local_form_init(input_obj, b_reserve)
+
+    def _local_json_init(self, json_obj, b_reserve):
         if (not self._support_attr_list):
             self._support_attr_list = []
             for key, value in json_obj.items():
@@ -144,24 +185,64 @@ class mgt_c_object_from_json(object):
                     if ("_" == key[:1]):
                         self._include_attr_list.append(key)
 
-            # for those spoorted attributes but not given, set None
-            for key in list(self._support_attr_list):
-                if (not hasattr(self, key)):
-                    setattr(self, key, None)
+    def _local_model_init(self, model_obj, b_reserve):
+        if (not self._support_attr_list):
+            self._support_attr_list = []
+            for key in vars(model_obj):
+                if key in self._exclude_attr_list:
+                    continue
+                value = getattr(model_obj, key)
+                self._local_setattr(key, value, b_reserve)
+                if ("_" == key[:1]):
+                    self._include_attr_list.append(key)
+        else:
+            # handle supported attributes
+            for key in vars(model_obj):
+                if key in self._exclude_attr_list:
+                    continue
+                value = getattr(model_obj, key)
+                if (key in list(self._support_attr_list)):
+                    self._local_setattr(key, value, b_reserve)
+                    if ("_" == key[:1]):
+                        self._include_attr_list.append(key)
+
+    def _local_form_init(self, form_obj, b_reserve):
+        if (self._support_attr_list is None):
+            self._support_attr_list = []
+            for key in vars(form_obj):
+                if key in self._exclude_attr_list:
+                    continue
+                value = getattr(form_obj, key)
+                self._local_setattr(key, value, b_reserve)
+                if ("_" == key[:1]):
+                    self._include_attr_list.append(key)
+        else:
+            # handle supported attributes
+            for key in vars(form_obj):
+                if key in self._exclude_attr_list:
+                    continue
+                value = getattr(form_obj, key)
+                if (key in list(self._support_attr_list)):
+                    self._local_setattr(key, value, b_reserve)
+                    if ("_" == key[:1]):
+                        self._include_attr_list.append(key)
 
     def _local_setattr(self, key, value, b_reserve=False):
-        if (not b_reserve or (not isinstance(value, dict)
+        if (not b_reserve or ((not isinstance(value, dict))
+                              and not (isinstance(value, Model))
+                              and not isinstance(value, FlaskForm)
                               and not isinstance(value, list)
                               and not isinstance(value, tuple))):
             setattr(self, key, value)
-        elif (isinstance(value, dict)):
-            v_obj = mgt_c_object_from_json(value, b_reserve)
+        elif (isinstance(value, dict) or (isinstance(value, Model))
+              or isinstance(value, FlaskForm)):
+            v_obj = mgt_c_object(value, b_reserve)
             setattr(self, key, v_obj)
         else:
             if (not value):
                 setattr(self, key, value)
                 return
-            v_list = mgt_c_object_from_json.parse_list(value)
+            v_list = mgt_c_object.parse_list(value)
             setattr(self, key, v_list)
 
     @staticmethod
@@ -171,33 +252,58 @@ class mgt_c_object_from_json(object):
 
         v_list = []
         for v in value_list:
-            if (not isinstance(v, dict) and not isinstance(v, list) and not isinstance(v, tuple)):
+            if ((not isinstance(v, dict)
+                 and not (isinstance(v, Model))
+                 and not isinstance(v, FlaskForm)
+                 and not isinstance(v, list)
+                 and not isinstance(v, tuple))):
                 v_list.append(v)
-            elif (isinstance(v, dict)):
-                v_obj = mgt_c_object_from_json(v, True)
+            elif (isinstance(v, dict) or (isinstance(v, Model))
+                  or isinstance(v, FlaskForm)):
+                v_obj = mgt_c_object(v, True)
                 v_list.append(v_obj)
             else:
-                v_parse = mgt_c_object_from_json.parse_list(v)
+                v_parse = mgt_c_object.parse_list(v)
                 v_list.append(v_parse)
 
         return v_list
 
     @staticmethod
-    def reverse_parse_list(value_list):
+    def reverse_parse_list(value_list, to_type="json"):
         if (not value_list):
             return value_list
 
         v_list = []
         for v in value_list:
-            if (not isinstance(v, mgt_c_object_from_json) and not isinstance(v, list) and not isinstance(v, tuple)):
+            if (not isinstance(v, mgt_c_object)
+                and not isinstance(v, list)
+                    and not isinstance(v, tuple)):
                 v_list.append(v)
-            elif (isinstance(v, mgt_c_object_from_json)):
-                v_list.append(v.to_json())
+            elif (isinstance(v, mgt_c_object)):
+                if ("Model" == to_type):
+                    v_list.append(v.to_model())
+                else:
+                    v_list.append(v.to_json())
             else:
-                v_parse = mgt_c_object_from_json.reverse_parse_list(v)
+                v_parse = mgt_c_object.reverse_parse_list(
+                    v, to_type)
                 v_list.append(v_parse)
 
         return v_list
+
+    @property
+    def entity_cls(self):
+        return self._entity_cls
+
+    @property
+    def attrs(self):
+        if (self._support_attr_list):
+            return self._support_attr_list
+
+        return [attr for attr in vars(self)
+                if (("_" != attr[:1] or attr in self._include_attr_list)
+                    and attr not in self._exclude_attr_list
+                    )]
 
     def set_support_attrs(self, usr_sup_attrs=[]):
         if (not usr_sup_attrs):
@@ -224,7 +330,7 @@ class mgt_c_object_from_json(object):
                                                set(ex_usr_sup_attrs))
                 self._user_support_attr_list = []
 
-            # do NOT initialize reset attrs
+            # do NOT initialize reset attrs' value
             # we may need them later
 
         return True
@@ -241,7 +347,7 @@ class mgt_c_object_from_json(object):
                         j[attr] = self._local_json_parse(attr)
 
                 else:
-                    if ("_" == attr[:1] or attr in g_static_exclude_attrs):
+                    if ("_" == attr[:1] or attr in self._exclude_attr_list):
                         if (self._include_attr_list):
                             if (attr not in self._include_attr_list):
                                 continue
@@ -255,25 +361,66 @@ class mgt_c_object_from_json(object):
             return None
 
         v = getattr(self, attr)
-        if ((not isinstance(v, mgt_c_object_from_json))
+        if ((not isinstance(v, mgt_c_object))
             and (not isinstance(v, list))
                 and (not isinstance(v, tuple))):
             return v
-        elif (isinstance(v, mgt_c_object_from_json)):
+        elif (isinstance(v, mgt_c_object)):
             return v.to_json()
         else:
-            return mgt_c_object_from_json.reverse_parse_list(v)
+            return mgt_c_object.reverse_parse_list(v)
+
+    def to_model(self, model_cls=None, attr_map: dict = {}):
+        if (model_cls is None):
+            model_cls = self.entity_cls
+        m = model_cls()
+        if attr_map:
+            for key, attr in attr_map.items():
+                if (hasattr(m, attr)):
+                    setattr(m, attr, self._local_model_parse(key))
+        else:
+            for attr in vars(self):
+                if (self._support_attr_list):
+                    for attr in self._support_attr_list:
+                        setattr(m, attr, self._local_model_parse(attr))
+
+                else:
+                    if ("_" == attr[:1] or attr in self._exclude_attr_list):
+                        if (self._include_attr_list):
+                            if (attr not in self._include_attr_list):
+                                continue
+                        else:
+                            continue
+                    if (hasattr(m, attr)):
+                        setattr(m, attr, self._local_model_parse(attr))
+        return m
+
+    def _local_model_parse(self, attr):
+        if (not hasattr(self, attr)):
+            return self._default_value_map.get(attr)
+
+        v = getattr(self, attr)
+        if ((not isinstance(v, mgt_c_object))
+            and (not isinstance(v, list))
+                and (not isinstance(v, tuple))):
+            return v
+        elif (isinstance(v, mgt_c_object)):
+            return v.to_model()
+        else:
+            if (not v):
+                return v
+            return mgt_c_object.reverse_parse_list(v, "Model")
 
     def __eq__(self, oth):
-        if (not isinstance(oth, mgt_c_object_from_json)):
+        if (not isinstance(oth, mgt_c_object)):
             return False
         self_attrs = set([attr for attr in vars(self)
                           if ("_" != attr[:1]
-                              and attr not in g_static_exclude_attrs
+                              and attr not in self._exclude_attr_list
                               )])
         oth_attrs = set([attr for attr in vars(oth)
                          if ("_" != attr[:1]
-                             and attr not in g_static_exclude_attrs
+                             and attr not in self._exclude_attr_list
                              )])
         if (self._include_attr_list):
             self_attrs += set(self._include_attr_list)
@@ -293,3 +440,13 @@ class mgt_c_object_from_json(object):
                     return False
 
             return True
+
+
+def attr_list(cls, include_attrs=[], exclude_attrs=[]):
+
+    attr_list = [attr for attr in dir(cls)
+                 if (("_" != attr[:1] or attr in include_attrs)
+                     and attr not in exclude_attrs
+                     )]
+
+    return attr_list

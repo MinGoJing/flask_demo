@@ -1,12 +1,70 @@
 # DEBUG config
+PROJECT_NAME: FlaskDemo
+
 DEBUG: True
 
 DB:
+    USE_SQLALCHEMY: True
     MYSQL:
-        HOST: 192.168.2.103
+        DIALECT: mysql
+        DRIVER: pymysql
+        # release config
+        HOST: localhost
         PORT: 3306
         USER: dev_all
         PASSWORD: xx180922
-        #
+        DB: system
+        # debug config
+        DEBUG_HOST: localhost
+        DEBUG_PORT: 3306
+        DEBUG_USER: dev_all
+        DEBUG_PASSWORD: xx180922
+        DEBUG_DB: system
+        # 4 SQLAlchemy Use release config always
+        SQLALCHEMY_DATABASE_URI: ${DIALECT}+${DRIVER}://${USER}:${PASSWORD}@${HOST}:${PORT}/${DB}?charset=utf8
+        SQLALCHEMY_TRACK_MODIFICATIONS: False
 
 LOGGER:
+    version: 1
+
+    formatters:
+        default:
+            format: "[%(asctime)s][%(name)s][%(filename)s,%(lineno)d,%(funcName)s][%(levelname)s] %(message)s"
+            datefmt: "%a,%d-%b-Y,%H:%M:%S"
+
+    handlers:
+        console:
+            class: logging.StreamHandler
+            level: DEBUG
+            formatter: default
+            stream: ext://sys.stdout
+
+        sys_file:
+            class: logging.handlers.RotatingFileHandler
+            level: INFO
+            formatter: default
+            filename: ./log/sys.log
+            maxBytes: 10485760 # 10MB
+            backupCount: 20 #most 20 extensions
+            encoding: utf8
+
+        mss_file:
+            class: logging.handlers.RotatingFileHandler
+            level: ERROR
+            formatter: default
+            filename: ./log/mssw.log
+            maxBytes: 10485760 # 10MB
+            backupCount: 20
+            encoding: utf8
+    root:
+        level: INFO
+        handlers: ["console"]
+
+    loggers:
+        SYS:
+            level: INFO
+            handlers: ["sys_file", "console"]
+
+        MSS:
+            level: INFO
+            handlers: ["mss_file", "console"]

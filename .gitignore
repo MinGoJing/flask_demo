@@ -13,8 +13,10 @@ parts/
 var/
 docs/
 
-# exclude file patterns
+# include file patterns
 !__init__.py
+
+# exclude file patterns
 *.py[cod]
 *$py.class
 *workspace

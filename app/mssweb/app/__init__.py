@@ -2,13 +2,13 @@
 # -*- encoding: utf-8 -*-
 '''
 @File    :   __init__.py
-@Desc    :   provide user defined db process
+@Desc    :   provide init process
 @Version :   1.0
 @Author  :   MinGo
 @Contact :   mingo_jing@163.com
-@License :   (C)Copyright since 2020, MinGo
+@License :   (C)Copyright since 2020, mingjun_jing
 @History :   
-    1.0: 2020/05/20 05:29, MinGo
+    1.0: 2020/01/11 18:34, MinGo
           1. Created.
 
 '''

@@ -2,7 +2,7 @@
 # -*- encoding: utf-8 -*-
 '''
 @File    :   __init__.py
-@Desc    :   provide init process
+@Desc    :   provide HIGH reuseable service level apis
 @Version :   1.0
 @Author  :   MinGo
 @Contact :   mingo_jing@163.com
@@ -14,4 +14,3 @@
 '''
 
 # py
-

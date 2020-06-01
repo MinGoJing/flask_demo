@@ -1,24 +1,12 @@
 # coding: utf-8
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.schema import FetchedValue
 from sqlalchemy.orm import relationship
 from flask_sqlalchemy import SQLAlchemy
 
 
-db = SQLAlchemy()
-
-
-class PubDict(db.Model):
-    __tablename__ = 'pub_dict'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(45), nullable=False)
-    category = db.Column(db.String(45), nullable=False)
-    disabled = db.Column(db.Integer, nullable=False,
-                         server_default=db.FetchedValue())
-    operator_id = db.Column(db.Integer)
-    operate_time = db.Column(db.DateTime, nullable=False,
-                             server_default=db.FetchedValue())
+# db
+from app import db
 
 
 class SysCompany(db.Model):
