@@ -36,21 +36,25 @@ __all__ = [
 dict_add_par = RequestParser()
 dict_add_par.add_argument("category",
                           type=str, required=True,
-                          help="Dict category.")
+                          help="Name of a group of Enum values. (Required)")
 dict_add_par.add_argument("name",
                           type=str, required=True,
-                          help="Enum name.")
+                          help="Enum name. (Required)")
 dict_add_par.add_argument("disabled",
                           type=int, choices=[0, 1], default=0,
-                          help="disabled status, 1 -> disabled.")
+                          help=("disabled status, value choice. "
+                                "1: disabled; 0: enabled;"))
+dict_add_par.add_argument("note",
+                          type=str,
+                          help="Enum note.")
 # put
 dict_put_par = dict_add_par.copy()
 dict_put_par.add_argument("id",
                           type=int, required=True,
-                          help="ID.")
+                          help="Enum ID. (Required)")
 dict_put_par.replace_argument("category",
                               type=str,
-                              help="Dict category.")
+                              help="Name of a group of Enum values.")
 dict_put_par.replace_argument("name",
                               type=str,
                               help="Enum name.")

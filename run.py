@@ -14,8 +14,6 @@
 '''
 
 # py
-import os
-from os import environ
 
 # app
 from app import app

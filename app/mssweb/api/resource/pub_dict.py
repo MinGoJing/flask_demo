@@ -59,7 +59,8 @@ class pub_dict(Resource):
     # flask_restful 安全认证方式，类似于flask注解，全局认证
     # decorators = [multi_auth.login_required]
     '''
-    若采用flask注解方式认证，在对应方法上添加下列装饰器，3选1'''
+    若采用flask注解方式认证，在对应方法上添加下列装饰器，3选1
+    '''
     # @basic_auth.login_required  # 用户名密码认证方式
     # @token_auth.login_required  # token认证方式
     # @multi_auth.login_required  # 两种综合认证方式，满足其一即可

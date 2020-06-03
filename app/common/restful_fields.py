@@ -18,6 +18,8 @@
 # flask
 from flask_restful import fields
 from flask_restful.fields import Raw
+from flask_restful.fields import MarshallingException
+
 
 # local
 from . code import RET
@@ -36,28 +38,41 @@ class NoEmptyStringField(fields.String):
 
     def format(self, v):
         if (v is None or 0 == len(str(v))):
-            raise ValueError()
+            error_msg = ("Input string empty.")
+            raise MarshallingException(error_msg)
 
         return v
 
 
 class IntCombinedInStrField(fields.String):
 
-    def format(self, v):
+    def format(self, value):
+        v = super().format(value)
+
         if (v is None or 0 == len(str(v))):
-            raise ValueError()
+            error_msg = ("Int list in len(0).")
+            raise MarshallingException(error_msg)
 
         if (not isinstance(v, str)):
-            raise ValueError()
+            error_msg = ("Int list NOT in string type.")
+            raise MarshallingException(error_msg)
 
         v_list = []
         for v_s in v.split(","):
             try:
                 v_list.append(int(v_s))
             except Exception:
-                raise ValueError
+                error_msg = (
+                    "Int list items(seperated with ',') NOT in int type.")
+                raise MarshallingException(error_msg)
 
         return v_list
+
+    def output(self, key, obj):
+        return self.format(self.attribute)
+
+    def translate(self, escape_tab):
+        return super().format(self.attribute)
 
 
 def render_data(data, code=RET.S_OK, msg="ok"):

@@ -12,6 +12,7 @@ wheels/
 parts/
 var/
 docs/
+trd/*
 
 # include file patterns
 !__init__.py
@@ -20,3 +21,4 @@ docs/
 *.py[cod]
 *$py.class
 *workspace
+.*

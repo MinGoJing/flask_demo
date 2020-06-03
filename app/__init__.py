@@ -37,15 +37,6 @@ from mgutil.file import mgf_match_ls_sub_names
 PROJ_HOME_PATH = path.abspath(
     path.join(path.dirname(path.abspath(__file__)), ".."))
 sys.path.insert(0, PROJ_HOME_PATH)
-print(sys.path)
-
-# init flask app
-#
-app = Flask(__name__)
-
-# init app secret key
-#
-app.secret_key = os.urandom(32)
 
 # parse yml config
 #
@@ -58,6 +49,25 @@ if (platform.system() == "Windows"):
     setattr(conf, "SLASH", "\\")
 else:
     setattr(conf, "SLASH", "/")
+
+# trd part source code debug using
+if (conf.DEBUG):
+    TRD_HOME = PROJ_HOME_PATH + conf.SLASH + "trd"
+    TRD_SOURCES = mgf_match_ls_sub_names(TRD_HOME,
+                                         match_exp="^[^_]+$",
+                                         is_path_relative=True, match_opt=1)
+    for name in TRD_SOURCES:
+        trd_path_home = TRD_HOME + conf.SLASH + name
+        sys.path.insert(1, trd_path_home)
+        print("Add source env: {}".format(name))
+
+# init flask app
+#
+app = Flask(__name__)
+
+# init app secret key
+#
+app.secret_key = os.urandom(32)
 
 # init from yml conf
 #

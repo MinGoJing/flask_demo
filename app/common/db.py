@@ -16,7 +16,8 @@
 # py
 from typing import List
 
-# sqlalchemy
+# flask
+from flask_restful import fields
 from sqlalchemy.inspection import inspect
 
 # base util
@@ -150,7 +151,8 @@ class base_db_model(mgt_c_object):
                         page_index(start from 1), page_size 使用本文提供的固定key;
 
             @query_map items :
-                "key1" : value  # attr(s) = value_list 会被默认处理成 attr in value_list
+                # attr(s) = value_list 会被默认处理成 attr in value_list
+                "key1" : value
                     .OR.
                 "key1" : {
                     "op": <op>,
@@ -216,7 +218,11 @@ class base_db_model(mgt_c_object):
                 if (id(attr) != id(attr_s)):
                     value = op_v
                 else:
-                    if (isinstance(op_v, list) or isinstance(op_v, tuple)):
+                    op = "in"
+                    if (isinstance(op_v, fields.Raw)):
+                        op_v = op_v.format(op_v.default)
+
+                    if (isinstance(op_v, (list, tuple))):
                         value = op_v
                     else:
                         value = [op_v]
@@ -229,7 +235,11 @@ class base_db_model(mgt_c_object):
                     value = op_v["value"]
                 except Exception:
                     raise QueryMapFormatException(data={key: op_v})
-            # skip null op_v filters
+            if (isinstance(value, fields.Raw)):
+                value = value.format(value.default)
+
+            # skip op_v(None) filters if attribute doesn't support None value filtering process
+            # we usually default filter args to None if user did NOT given.
             if (value is None or op_v is None) and (attr not in cls._null_filter_attrs):
                 continue
 
