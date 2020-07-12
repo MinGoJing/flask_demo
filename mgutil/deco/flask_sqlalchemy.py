@@ -30,10 +30,13 @@ def transaction(session):
                 if ("session" in kwargs):
                     kwargs["session"] = session
                 ret = func(*args, **kwargs)
-                session.commit()
+                if (session.is_active):
+                    session.commit()
                 return ret
             except Exception as e:
-                session.rollback()
-                raise e
+                print(e)
+                if (session.is_active):
+                    session.rollback()
+                return {"code": e.code, "data": e.data, "msg": str(e)}
         return sub_wrapper
     return wrapper

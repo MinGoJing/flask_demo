@@ -25,11 +25,11 @@ MGC_RESULT_FAIL_FLAG = 0x80000000
 
 
 def FAIL_CODE(__layer_base__, __module_base__, __http_code__, __module_code__):
-    return (MGC_RESULT_FAIL_FLAG | ((__layer_base__)+(__module_base__)+(__http_code__)+(__module_code__)))
+    return (MGC_RESULT_FAIL_FLAG | ((__layer_base__)+(__module_base__)+(__http_code__ << 8)+(__module_code__)))
 
 
 def SUCCESS_CODE(__layer_base__, __module_base__, __http_code__, __module_code__):
-    return (__layer_base__)+(__module_base__)+(__http_code__)+(__module_code__)
+    return (__layer_base__)+(__module_base__)+(__http_code__ << 8)+(__module_code__)
 
 
 def OK(hr):
@@ -117,6 +117,8 @@ class RET(mgt_c_base_result_code):
     ##=========================================================##
     E_ORM_ENTITY_NOT_FOUND_ERROR = \
         (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x500, 0x01))
+    E_ENTITY_UPDATE_UNIQUE_ERROR = \
+        (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x400, 0x01))
 
     _info_dict = {
         # PLF - SYS
@@ -164,6 +166,9 @@ class RET(mgt_c_base_result_code):
         E_ORM_ENTITY_NOT_FOUND_ERROR: {
             "en": "E_ORM_ENTITY_NOT_FOUND_ERROR",
             "zh-cn": "数据库表对象未找到"},
+        E_ENTITY_UPDATE_UNIQUE_ERROR: {
+            "en": "E_ENTITY_UPDATE_UNIQUE_ERROR",
+            "zh-cn": "数据库表对象更新唯一性校验失败"},
 
         None: {
             "en": "<RET NOT FOUND>",
@@ -172,4 +177,4 @@ class RET(mgt_c_base_result_code):
 
     @staticmethod
     def INFO(code, lan="en"):
-        return RET._info_dict.get(code, {"en": "<RET NOT FOUND>", "zh-cn": "<未知返回值>"}).get(lan)
+        return RET._info_dict.get(code, {"en": "<RET NOT FOUND>", "zh-cn": "<未知返回值>"}).get(lan).replace('_', " ")

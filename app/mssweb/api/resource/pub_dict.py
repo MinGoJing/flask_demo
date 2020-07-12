@@ -24,19 +24,20 @@ from app import db
 
 # common
 from app.common.db import transaction
+from app.common.code import RET
 from app.common.http_auth import multi_auth
 from app.common.restful_fields import render_data
 from app.common.restful_fields import int_record_fields
 
 # parser
-from ..parser import dict_add_par
-from ..parser import dict_get_par
-from ..parser import dict_put_par
-from ..parser import dict_dd_par
+from ..api_in import dict_add_par
+from ..api_in import dict_get_par
+from ..api_in import dict_put_par
+from ..api_in import dict_dd_par
 
 # fields
-from ..field import pub_dict_record_fields
-from ..field import pub_dict_records_fields
+from ..api_out import pub_dict_record_fields
+from ..api_out import pub_dict_records_fields
 
 # db processor
 from app.mssweb.dao import pub_dict_processor, PubDict
@@ -56,6 +57,7 @@ sss = db.session
 
 
 class pub_dict(Resource):
+
     # flask_restful 安全认证方式，类似于flask注解，全局认证
     # decorators = [multi_auth.login_required]
     '''
@@ -64,7 +66,6 @@ class pub_dict(Resource):
     # @basic_auth.login_required  # 用户名密码认证方式
     # @token_auth.login_required  # token认证方式
     # @multi_auth.login_required  # 两种综合认证方式，满足其一即可
-
     @marshal_with(pub_dict_record_fields)
     def get(self, dict_id):
         #
@@ -76,7 +77,9 @@ class pub_dict(Resource):
     def put(self, dict_id):
         params = dict_put_par.parse_args()
         dict_db_proc = pub_dict_processor(params)
-        ret = dict_db_proc.update()
+        ret = dict_db_proc.update(unique_keys=["name", "category"])
+        if (isinstance(ret, dict)):
+            ret["data"] = 0
         return render_data(ret)
 
     @marshal_with(int_record_fields)
@@ -95,8 +98,12 @@ class pub_dict_s(Resource):
     def post(self):
         params = dict_add_par.parse_args()
         pub_dict_proc = pub_dict_processor(params)
-        dict_id = pub_dict_proc.add()
-        return render_data(dict_id)
+        # rcd = pub_dict_proc.add(unique_keys=["name", "category"])
+        rcd = pub_dict_processor.add_many(
+            [pub_dict_proc], unique_keys=["name"])
+        if (isinstance(rcd, dict)):
+            rcd["data"] = 0
+        return render_data(rcd)
 
     @marshal_with(pub_dict_records_fields)
     def get(self, category=None, name=""):

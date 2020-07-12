@@ -14,13 +14,9 @@
 '''
 
 # py
-from datetime import datetime
-
-# app
-from app import db
 
 # common
-from app.common.db import base_db_model
+from app.common.db import base_db_update_model
 
 # model
 from ..model import PubDict
@@ -29,14 +25,9 @@ from ..model import PubDict
 __all__ = [
     "pub_dict_processor",
     "PubDict"
-]  # dzwO8iu8
+]
 
 
-class pub_dict_processor(base_db_model):
+class pub_dict_processor(base_db_update_model):
     _entity_cls = PubDict
-    _null_filter_attrs = []
-
-    def update(self, session=db.session):
-        self.operator_id = 15  # login user id, or None
-        self.operate_time = datetime.now()
-        return super().update(session)
+    _null_supported_filter_attrs = []

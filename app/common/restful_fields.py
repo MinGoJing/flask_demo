@@ -76,10 +76,16 @@ class IntCombinedInStrField(fields.String):
 
 
 def render_data(data, code=RET.S_OK, msg="ok"):
+    if (not isinstance(data, dict)):
+        return {"code": code, "msg": msg, "data": data}
+    elif (3 == len(set(["code", "data", "msg"]) & set(data.keys()))):
+        return data
+
     return {"code": code, "msg": msg, "data": data}
 
 
 int_record_fields = {
+    "code": fields.Integer,
     "msg": fields.String(default="ok"),
     "data": fields.Integer,
 }

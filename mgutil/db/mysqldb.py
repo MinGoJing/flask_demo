@@ -37,7 +37,7 @@ class Mysql(object):
     def __init__(self, mincached=10, maxcached=20, maxshared=10, maxconnections=200, blocking=True,
                  maxusage=100, setsession=None, reset=True,
                  host='127.0.0.1', port=3306, db='test',
-                 user='root', password='123456', charset='utf8'):
+                 user='root', password='123456', charset='utf8', **kwargs):
         """
         :param mincached:连接池中空闲连接的初始数量
         :param maxcached:连接池中空闲连接的最大数量

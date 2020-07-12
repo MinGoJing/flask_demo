@@ -19,6 +19,9 @@ from typing import List
 # local
 from .code import RET
 
+# mgutil
+from mgutil.base import mgt_c_object
+
 
 class BaseDataRenderException(Exception):
     """
@@ -55,10 +58,10 @@ class InvalidEntityClsException(BaseDataRenderException):
     """
 
     def __init__(self, data, msg=""):
+        code = RET.E_ORM_ENTITY_NOT_FOUND_ERROR
         if (not msg):
-            msg = "db entity[%s] NOT found." % (data)
-        BaseDataRenderException.__init__(
-            self, msg, code=RET.E_ORM_ENTITY_NOT_FOUND_ERROR, data=data)
+            msg = "%s: db entity[%s] NOT found." % (RET.INFO(code), data)
+        BaseDataRenderException.__init__(self, msg, code, data=data)
 
 
 class BadParameterException(BaseDataRenderException):
@@ -72,12 +75,13 @@ class BadParameterException(BaseDataRenderException):
     """
 
     def __init__(self, data: dict, msg=""):
+        code = RET.E_BAD_PARAMETER
         if (not msg):
-            msg = ("parameter[%s<%s> : %s] NOT in required type<%s>"
-                   % (data.get("name"), type(data.get("value")),
+            msg = ("%s: parameter[%s<%s> : %s] NOT in required type<%s>"
+                   % (RET.INFO(code), data.get("name"), type(data.get("value")),
                       data.get("value"), data.get("type_req")))
         BaseDataRenderException.__init__(
-            self, msg, code=RET.E_BAD_PARAMETER, data=data)
+            self, msg, code, data=data)
 
 
 class InvalidArgsException(BaseDataRenderException):
@@ -93,6 +97,7 @@ class InvalidArgsException(BaseDataRenderException):
     """
 
     def __init__(self, data: list, msg=""):
+        code = RET.E_BAD_PARAMETER
         if (not msg):
             args = ""
             if ((isinstance(data, list)
@@ -105,9 +110,10 @@ class InvalidArgsException(BaseDataRenderException):
                         args = "%s, %s<%s>" % (
                             args, d.get("name"), d.get("type"))
 
-            msg = ("NOT all parameters[%s] were given." % (args))
+            msg = ("%s: NOT all parameters[%s] were given." % (
+                RET.INFO(code), args))
         BaseDataRenderException.__init__(
-            self, msg, code=RET.E_BAD_PARAMETER, data=data)
+            self, msg, code, data=data)
 
 
 class QueryMapFormatException(BaseDataRenderException):
@@ -116,9 +122,11 @@ class QueryMapFormatException(BaseDataRenderException):
     """
 
     def __init__(self, data: dict, msg=""):
-
+        code = RET.E_BAD_PARAMETER
+        if (not msg):
+            msg = "%s: %s" % (RET.INFO(code), msg)
         BaseDataRenderException.__init__(
-            self, msg, code=RET.E_BAD_PARAMETER, data=data)
+            self, msg, code, data=data)
 
 
 class StringFieldEmptyException(BaseDataRenderException):
@@ -127,7 +135,22 @@ class StringFieldEmptyException(BaseDataRenderException):
             filed name.
     """
 
-    def __init__(self, data: str, msg="String field<{}> is empty."):
+    def __init__(self, data: str, msg=""):
+        code = RET.E_INVALID_ARGS
+        if (not msg):
+            msg = "{}: String field<{}> is empty.".format(RET.INFO(code), data)
+        BaseDataRenderException.__init__(self, msg, code, data)
 
-        BaseDataRenderException.__init__(
-            self, msg=msg.format(data), code=RET.E_INVALID_ARGS, data=data)
+
+class EntityUpdateUniqueKeyExistsException(BaseDataRenderException):
+    """
+    @data : mgt_c_object
+            Db entity class object
+    """
+
+    def __init__(self, data: list, msg=""):
+        code = RET.E_ENTITY_UPDATE_UNIQUE_ERROR
+        if (not msg):
+            msg = ( "{}: Entity <{}> object update <{}> unique check error.".format(
+                    RET.INFO(code), *data))
+        BaseDataRenderException.__init__(self, msg, code, data)

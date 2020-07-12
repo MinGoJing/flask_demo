@@ -25,6 +25,9 @@ __all__ = [
     "pub_dict_records_fields"
 ]
 
+
+# local fields
+#
 pub_dict_record_field = {
     "id": fields.Integer,
     "name": fields.String,
@@ -36,13 +39,17 @@ pub_dict_record_field = {
     "note": fields.String,
 }
 
+
+# API fields
+#
 pub_dict_record_fields = {
     "msg": fields.String(default="ok"),
+    "code": fields.Integer,
     "data": fields.Nested(pub_dict_record_field),
 }
 
-
 pub_dict_records_fields = {
     "msg": fields.String(default="ok"),
+    "code": fields.Integer,
     "data": fields.List(fields.Nested(pub_dict_record_field)),
 }
