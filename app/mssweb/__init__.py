@@ -25,6 +25,8 @@ from .api.error import errors
 # api resource
 from .api.resource.pub_dict import pub_dict
 from .api.resource.pub_dict import pub_dict_s
+from .api.resource.utility import utility
+from .api.resource.utility import utility_s
 
 
 def init_module(api):
@@ -34,3 +36,5 @@ def init_module(api):
     # add resource
     api.add_resource(pub_dict, "/dict/<dict_id>", endpoint="dict")
     api.add_resource(pub_dict_s, "/dicts", endpoint="dicts")
+    api.add_resource(utility, "/utility/<utility_id>", endpoint="utility")
+    api.add_resource(utility_s, "/utilitys", endpoint="utilitys")

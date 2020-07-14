@@ -1,14 +1,14 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 # -*- encoding: utf-8 -*-
 '''
-@File    :   pub_dict_dao.py
-@Desc    :   provide pub dict model process.
+@File    :   utility_dao.py
+@Desc    :   provide utility db model process
 @Version :   1.0
 @Author  :   MinGo
 @Contact :   mingo_jing@163.com
 @License :   (C)Copyright since 2020, MinGo
 @History :   
-    1.0: 2020/05/10 15:01, MinGo
+    1.0: 2020/07/11 19:30, MinGo
           1. Created.
 
 '''
@@ -19,15 +19,16 @@
 from app.common.db import base_db_update_model
 
 # model
-from ..model import PubDict
+from ..model import MsswUltility
 
 # export
 __all__ = [
-    "pub_dict_processor",
-    "PubDict"
+    "utility_processor",
+    "MsswUltility"
 ]
 
 
-class pub_dict_processor(base_db_update_model):
-    _entity_cls = PubDict
+class utility_processor(base_db_update_model):
+    _entity_cls = MsswUltility
     _null_supported_filter_attrs = []
+    _key_2_db_attr_map = {}

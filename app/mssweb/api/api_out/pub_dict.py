@@ -29,7 +29,7 @@ __all__ = [
 # local fields
 #
 pub_dict_record_field = {
-    "id": fields.Integer,
+    "id": fields.Integer(attribute="id2"),
     "name": fields.String,
     "disabled": fields.Boolean,
     "category": fields.String,

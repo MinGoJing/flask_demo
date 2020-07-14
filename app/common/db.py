@@ -14,10 +14,12 @@
 '''
 
 # py
+import copy
 from typing import List
 from datetime import datetime
 
 # flask
+from werkzeug import import_string
 from flask_restful import fields
 from sqlalchemy.inspection import inspect
 
@@ -30,6 +32,9 @@ from mgutil.deco import transaction
 # app
 from app import db
 
+# mgutil
+from mgutil.file import mgf_match_ls_sub_names
+
 # local
 from .exception import QueryMapFormatException, EntityUpdateUniqueKeyExistsException
 
@@ -40,7 +45,8 @@ log = logging.getLogger("SYS")
 # export
 __all__ = [
     "base_db_model",
-    "base_db_update_model"
+    "base_db_update_model",
+    "init_db_processors"
 ]
 
 
@@ -50,13 +56,14 @@ class base_db_model(mgt_c_object):
             inherit this, and save a lot time in handlering basic AUDS process.
 
     @_entity_cls: DB entity Class name.
-    @_key2attr: dict from key to attribute.
+    @_key_2_db_attr_map: dict from key to attribute.
             key is the API feature name;
             attribute is Class member.
     """
     _exclude_attr_list = None
     _entity_cls = None
-    _key2attr = None
+    _key_2_db_attr_map = None
+    _db_attr_2_key_map = None
     _null_supported_filter_attrs = None
 
     def __init__(self, in_obj={}, b_reverse=False, entity_cls_name=None, key2attr_map: dict = {}):
@@ -77,7 +84,8 @@ class base_db_model(mgt_c_object):
         if (self._support_attr_list is None):
             self._support_attr_list = []
         self._support_attr_list += set(attr_list(
-            self._entity_cls, exclude_attrs=self._exclude_attr_list))
+            self._entity_cls, exclude_attrs=self._exclude_attr_list,
+            attr2key_map=self.__class__.db_attr_2_key_map()))
         if (self._default_value_map is None):
             self._default_value_map = {}
         if (self._null_supported_filter_attrs is None):
@@ -86,9 +94,12 @@ class base_db_model(mgt_c_object):
         self._dispatch_relation_attr_default_value()
 
         if (isinstance(key2attr_map, dict)):
-            self._key2attr = key2attr_map
-        elif (not self._key2attr):
-            self._key2attr = {}
+            self._key_2_db_attr_map = key2attr_map
+        elif (not self._key_2_db_attr_map):
+            self._key_2_db_attr_map = {}
+        if (self._key_2_db_attr_map and not self._db_attr_2_key_map):
+            self._db_attr_2_key_map = copy.deepcopy(
+                self.__class__.db_attr_2_key_map())
 
         mgt_c_object.__init__(self, in_obj, b_reverse)
 
@@ -111,6 +122,21 @@ class base_db_model(mgt_c_object):
             return []
         return self._null_supported_filter_attrs
 
+    @property
+    def key_2_db_attr_map(self):
+        pass
+
+    @classmethod
+    def db_attr_2_key_map(cls):
+        if (cls._db_attr_2_key_map):
+            return cls._db_attr_2_key_map
+        if (not cls._key_2_db_attr_map):
+            return {}
+        else:
+            cls._db_attr_2_key_map = {
+                value: key for key, value in cls._key_2_db_attr_map.items()}
+            return cls._db_attr_2_key_map
+
     @transaction(session=db.session)
     def add(self, session=db.session, unique_keys=[]):
         if (unique_keys):
@@ -129,7 +155,8 @@ class base_db_model(mgt_c_object):
                 log.error(msg)
                 raise EntityUpdateUniqueKeyExistsException(data=[self.entity_cls.__tablename__,
                                                                  unique_identifier])
-        etty_obj = self.to_model(self._entity_cls)
+        etty_obj = self.to_model(
+            self._entity_cls, attr_map=self._key_2_db_attr_map)
         session.add(etty_obj)
         session.flush()
         return etty_obj.id
@@ -173,7 +200,7 @@ class base_db_model(mgt_c_object):
                 raise EntityUpdateUniqueKeyExistsException(data=[obj0.entity_cls.__tablename__,
                                                                  unique_identifier])
 
-        db_model_obj_list = [obj.to_model(obj._entity_cls)
+        db_model_obj_list = [obj.to_model(obj._entity_cls, )
                              for obj in base_model_obj_list]
         session.add_all(db_model_obj_list)
         return len(base_model_obj_list)
@@ -247,7 +274,8 @@ class base_db_model(mgt_c_object):
         for key, op_v in query_map.items():
             if (not key.count(".")):
                 # local Cls attr, support multifie attr(s) ends with 's'.
-                key2attr = cls._key2attr if (cls._key2attr is not None) else {}
+                key2attr = cls._key_2_db_attr_map if (
+                    cls._key_2_db_attr_map is not None) else {}
                 attr = getattr(cls._entity_cls, key2attr.get(key, key), None)
                 attr_s = None
 
@@ -380,7 +408,32 @@ def loc_analyze_attr_default_value(rel_dir):
 
 class base_db_update_model(base_db_model):
 
+    def add(self, session=db.session, unique_keys=[]):
+        self.operator_id = 15
+        self.operate_time = datetime.now()
+        return super().add(session, unique_keys)
+
+    def add_many(self, session=db.session, unique_keys=[]):
+        self.operator_id = 15
+        self.operate_time = datetime.now()
+        return super().add_many(session, unique_keys)
+
     def update(self, session=db.session, unique_keys=[]):
         self.operator_id = 15
         self.operate_time = datetime.now()
         return super().update(session, unique_keys)
+
+
+def init_db_processors(processor_dir_path):
+    # init db_processor._db_attr_2_key_map
+    sub_modules = mgf_match_ls_sub_names(processor_dir_path,
+                                         match_exp="^(?!_).+$",
+                                         is_path_relative=True, match_opt=0)
+    for mod in sub_modules:
+        mod_name = mod.split('.')[0]
+        db_processor = import_string(
+            "app.mssweb.dao.%s:%s_processor" % (mod_name, mod_name))
+        attr2key_map = db_processor.db_attr_2_key_map()
+        table_name = str(db_processor._entity_cls.__tablename__)
+        if (attr2key_map and not mgt_c_object._db_model_2_attr2key_map.get(table_name)):
+            mgt_c_object._db_model_2_attr2key_map[table_name] = attr2key_map

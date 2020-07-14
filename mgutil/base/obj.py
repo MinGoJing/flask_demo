@@ -118,6 +118,9 @@ class mgt_c_object(object):
     # user support attribute list, could be reset by reset()
     _user_support_attr_list = None
 
+    # global shared, defined 4 mgt_c_object reverse init from Model class
+    _db_model_2_attr2key_map = {}
+
     def __init__(self, input_obj={}, b_reserve=False):
         if (self._user_support_attr_list is None):
             self._user_support_attr_list = []
@@ -186,21 +189,25 @@ class mgt_c_object(object):
                         self._include_attr_list.append(key)
 
     def _local_model_init(self, model_obj, b_reserve):
+        attr2key_map = mgt_c_object.db_attr_2_key_map(model_obj)
+
         if (not self._support_attr_list):
             self._support_attr_list = []
-            for key in vars(model_obj):
+            for attr in vars(model_obj):
+                key = attr2key_map.get(attr, attr)
                 if key in self._exclude_attr_list:
                     continue
-                value = getattr(model_obj, key)
+                value = getattr(model_obj, attr)
                 self._local_setattr(key, value, b_reserve)
                 if ("_" == key[:1]):
                     self._include_attr_list.append(key)
         else:
             # handle supported attributes
-            for key in vars(model_obj):
+            for attr in vars(model_obj):
+                key = attr2key_map.get(attr, attr)
                 if key in self._exclude_attr_list:
                     continue
-                value = getattr(model_obj, key)
+                value = getattr(model_obj, attr)
                 if (key in list(self._support_attr_list)):
                     self._local_setattr(key, value, b_reserve)
                     if ("_" == key[:1]):
@@ -228,11 +235,7 @@ class mgt_c_object(object):
                         self._include_attr_list.append(key)
 
     def _local_setattr(self, key, value, b_reserve=False):
-        if (not b_reserve or ((not isinstance(value, dict))
-                              and not (isinstance(value, Model))
-                              and not isinstance(value, FlaskForm)
-                              and not isinstance(value, list)
-                              and not isinstance(value, tuple))):
+        if (not b_reserve or (not isinstance(value, (dict, Model, FlaskForm, list, tuple)))):
             setattr(self, key, value)
         elif (isinstance(value, dict) or (isinstance(value, Model))
               or isinstance(value, FlaskForm)):
@@ -252,14 +255,9 @@ class mgt_c_object(object):
 
         v_list = []
         for v in value_list:
-            if ((not isinstance(v, dict)
-                 and not (isinstance(v, Model))
-                 and not isinstance(v, FlaskForm)
-                 and not isinstance(v, list)
-                 and not isinstance(v, tuple))):
+            if ((not isinstance(v, (dict, Model, FlaskForm, list, tuple)))):
                 v_list.append(v)
-            elif (isinstance(v, dict) or (isinstance(v, Model))
-                  or isinstance(v, FlaskForm)):
+            elif (isinstance(v, (dict, Model, FlaskForm))):
                 v_obj = mgt_c_object(v, True)
                 v_list.append(v_obj)
             else:
@@ -304,6 +302,11 @@ class mgt_c_object(object):
                 if (("_" != attr[:1] or attr in self._include_attr_list)
                     and attr not in self._exclude_attr_list
                     )]
+
+    @classmethod
+    def db_attr_2_key_map(cls, entity_instance):
+        table_name = entity_instance.__class__.__tablename__
+        return cls._db_model_2_attr2key_map.get(table_name, {})
 
     def set_support_attrs(self, usr_sup_attrs=[]):
         if (not usr_sup_attrs):
@@ -442,11 +445,13 @@ class mgt_c_object(object):
             return True
 
 
-def attr_list(cls, include_attrs=[], exclude_attrs=[]):
+def attr_list(cls, include_attrs=[], exclude_attrs=[], attr2key_map={}):
+    key_list = []
 
-    attr_list = [attr for attr in dir(cls)
-                 if (("_" != attr[:1] or attr in include_attrs)
-                     and attr not in exclude_attrs
-                     )]
+    for attr in dir(cls):
+        key = attr2key_map.get(attr, attr)
+        if (("_" != key[:1] or key in include_attrs)
+                and (key not in exclude_attrs)):
+            key_list.append(key)
 
-    return attr_list
+    return key_list

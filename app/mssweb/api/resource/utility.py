@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 '''
-@File    :   pub_dict.py
-@Desc    :   provide pub dict APIs
+@File    :   utility.py
+@Desc    :   provide utility resources
 @Version :   1.0
 @Author  :   MinGo
 @Contact :   mingo_jing@163.com
 @License :   (C)Copyright since 2020, MinGo
-@History :
-    1.0: 2020/05/22 00:08, MinGo
+@History :   
+    1.0: 2020/07/12 20:04, MinGo
           1. Created.
 
 '''
@@ -30,33 +30,34 @@ from app.common.restful_fields import render_data
 from app.common.restful_fields import int_record_fields
 
 # parser
-from ..api_in import dict_add_par
-from ..api_in import dict_get_par
-from ..api_in import dict_put_par
-from ..api_in import dict_dd_par
+from ..api_in import utility_add_par
+from ..api_in import utility_get_par
+from ..api_in import utility_put_par
+from ..api_in import utility_dd_par
 
 # fields
-from ..api_out import pub_dict_record_fields
-from ..api_out import pub_dict_records_fields
+from ..api_out import utility_record_fields
+from ..api_out import utility_records_fields
 
 # db processor
-from app.mssweb.dao import pub_dict_processor
-
-# export
-__all__ = [
-    "pub_dict",
-    "pub_dict_s",
-]
+from app.mssweb.dao import utility_processor
 
 # log
 import logging
-log = logging.getLogger("SYS")
+log = logging.getLogger('MSS')
+
+# export
+__all__ = [
+    'utility',
+    'utility_s'
+]
+
 
 # global, do NOT let db.session to generate many scoped_sessions
 sss = db.session
 
 
-class pub_dict(Resource):
+class utility(Resource):
 
     # flask_restful 安全认证方式，类似于flask注解，全局认证
     # decorators = [multi_auth.login_required]
@@ -66,43 +67,41 @@ class pub_dict(Resource):
     # @basic_auth.login_required  # 用户名密码认证方式
     # @token_auth.login_required  # token认证方式
     # @multi_auth.login_required  # 两种综合认证方式，满足其一即可
-    @marshal_with(pub_dict_record_fields)
-    def get(self, dict_id):
+    @marshal_with(utility_record_fields)
+    def get(self, utility_id):
         #
-        obj = pub_dict_processor.fetch(dict_id)
+        obj = utility_processor.fetch(utility_id)
         return render_data(obj)
 
     @marshal_with(int_record_fields)
     @transaction(session=sss)
-    def put(self, dict_id):
-        params = dict_put_par.parse_args()
-        dict_db_proc = pub_dict_processor(params)
-        ret = dict_db_proc.update(unique_keys=["name", "category"])
-        if (isinstance(ret, dict)):
-            ret["data"] = 0
+    def put(self, utility_id):
+        params = utility_put_par.parse_args()
+        utility_db_proc = utility_processor(params)
+        ret = utility_db_proc.update()
         return render_data(ret)
 
     @marshal_with(int_record_fields)
     @transaction(session=sss)
-    def delete(self, dict_id, session=sss):
-        obj = pub_dict_processor.fetch(dict_id, to_user_obj=False)
+    def delete(self, utility_id, session=sss):
+        obj = utility_processor.fetch(utility_id, to_user_obj=False)
         session.delete(obj)
-        return render_data(dict_id)
+        return render_data(utility_id)
 
 
-class pub_dict_s(Resource):
+class utility_s(Resource):
     # flask_restful 安全认证方式，类似于flask注解，全局认证
     # decorators = [multi_auth.login_required]
 
     @marshal_with(int_record_fields)
     def post(self):
-        params = dict_add_par.parse_args()
-        pub_dict_proc = pub_dict_processor(params, key2attr_map={"id": "id2"})
-        rcd = pub_dict_proc.add(unique_keys=["name", "category"])
+        params = utility_add_par.parse_args()
+        utility_proc = utility_processor(params)
+        rcd = utility_proc.add()
         return render_data(rcd)
 
-    @marshal_with(pub_dict_records_fields)
-    def get(self, category=None, name=""):
-        f_params = dict_get_par.parse_args()
-        rcds = pub_dict_processor.get(f_params)
+    @marshal_with(utility_records_fields)
+    def get(self, category=None, name=''):
+        f_params = utility_get_par.parse_args()
+        rcds = utility_processor.get(f_params)
         return render_data(rcds)

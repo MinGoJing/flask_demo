@@ -14,5 +14,5 @@
 '''
 
 # py
-from .pub_dict_parser import *
-from .utility_parser import *
+from .pub_dict import *
+from .utility import *
