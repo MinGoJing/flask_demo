@@ -33,6 +33,4 @@ __all__ = [
 class program_processor(base_db_update_model):
     _entity_cls = MsswProgram
     _null_supported_filter_attrs = []
-    _key_2_db_attr_map = {
-        "id": "id"
-    }
+    _key_2_db_attr_map = {}

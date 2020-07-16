@@ -31,4 +31,9 @@ __all__ = [
 class utility_processor(base_db_update_model):
     _entity_cls = MsswUltility
     _null_supported_filter_attrs = []
-    _key_2_db_attr_map = {}
+    _key_2_db_attr_map = {
+        "utility_main_group_id": "fk_dict_utility_main_group_id",
+        "utility_sub_group_id": "fk_dict_utility_sub_group_id",
+        "utility_main_group": "fk_dict_utility_main_group",
+        "utility_sub_group": "fk_dict_utility_sub_group"
+    }

@@ -45,8 +45,8 @@ class CommonFilterParser(PageFilterParser):
     def __init__(self):
         PageFilterParser.__init__(self)
         self.add_argument("ids",
-                          type=IntCombinedInStrField.format, location=["args"],
-                          help=("A String, which is ID(int) combined by ','"))
+                          type=IntCombinedInStrField, location=["args"],
+                          help=("A String, which is ID(int) combined by ','."))
         self.add_argument("disabled",
                           choices=[0, 1], location=["args", "form"],
                           help=("disabled status, value choice. "

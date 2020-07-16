@@ -31,3 +31,4 @@
 [Sun,12-Jul-Y,16:29:22][SYS][db.py,129,add][ERROR] Entity <pub_dict> obj update unique <name:USER, category:config_type> check failed.
 [Sun,12-Jul-Y,16:33:43][SYS][db.py,172,add_many][ERROR] Entity <pub_dict> obj update <name:USER, category:config_type> unique check failed.
 [Sun,12-Jul-Y,16:36:02][SYS][db.py,172,add_many][ERROR] Entity <pub_dict> obj update <name:USER>, <name:USER>, <name:USER>, <name:USER>, <name:USER>, <name:USER>, <name:USER> unique check failed.
+[Thu,16-Jul-Y,06:43:10][SYS][db.py,155,add][ERROR] Entity <pub_dict> obj update unique <name:USER, category:config_type> check failed.

@@ -38,10 +38,10 @@ utility_add_par = RequestParser()
 utility_add_par.add_argument('name',
                              type=str, required=True,
                              help='Enum name. (Required)')
-utility_add_par.add_argument('dict_utility_main_group_id',
+utility_add_par.add_argument('utility_main_group_id',
                              type=int, required=True,
                              help='Utility main group ID. (Required)')
-utility_add_par.add_argument('dict_utility_sub_group_id',
+utility_add_par.add_argument('utility_sub_group_id',
                              type=int, required=True,
                              help='Utility sub group ID. (Required)')
 utility_add_par.add_argument('description',
@@ -55,10 +55,10 @@ utility_put_par.add_argument('id',
 utility_put_par.replace_argument('name',
                                  type=str,
                                  help='Enum name.')
-utility_put_par.replace_argument('dict_utility_main_group_id',
+utility_put_par.replace_argument('utility_main_group_id',
                                  type=int,
                                  help='Utility main group ID.')
-utility_put_par.replace_argument('dict_utility_sub_group_id',
+utility_put_par.replace_argument('utility_sub_group_id',
                                  type=int,
                                  help='Utility sub group ID.')
 utility_put_par.replace_argument('description',
@@ -72,10 +72,10 @@ utility_get_par.add_argument('id',
 utility_get_par.replace_argument('name',
                                  type=str,
                                  help='name = ?(str)')
-utility_get_par.replace_argument('dict_utility_main_group_name',
+utility_get_par.replace_argument('utility_main_group_name',
                                  type=str,
                                  help='Utility main group Name.')
-utility_get_par.replace_argument('dict_utility_sub_group_name',
+utility_get_par.replace_argument('utility_sub_group_name',
                                  type=str,
                                  help='Utility sub group Name.')
 

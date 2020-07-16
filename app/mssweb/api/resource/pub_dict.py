@@ -97,7 +97,7 @@ class pub_dict_s(Resource):
     @marshal_with(int_record_fields)
     def post(self):
         params = dict_add_par.parse_args()
-        pub_dict_proc = pub_dict_processor(params, key2attr_map={"id": "id2"})
+        pub_dict_proc = pub_dict_processor(params)
         rcd = pub_dict_proc.add(unique_keys=["name", "category"])
         return render_data(rcd)
 

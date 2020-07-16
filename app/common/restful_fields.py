@@ -14,15 +14,19 @@
 '''
 
 # py
+import json
+from datetime import date
+from datetime import datetime
 
 # flask
 from flask_restful import fields
-from flask_restful.fields import Raw
+from flask_restful.fields import String
 from flask_restful.fields import MarshallingException
 
 
 # local
 from . code import RET
+from .db import base_db_model
 from . exception import *
 
 # export
@@ -34,7 +38,7 @@ __all__ = [
 ]
 
 
-class NoEmptyStringField(fields.String):
+class NoEmptyStringField(String):
 
     def format(self, v):
         if (v is None or 0 == len(str(v))):
@@ -44,10 +48,10 @@ class NoEmptyStringField(fields.String):
         return v
 
 
-class IntCombinedInStrField(fields.String):
+class IntCombinedInStrField(String):
 
     def format(self, value):
-        v = super().format(value)
+        v = String.format(self, value)
 
         if (v is None or 0 == len(str(v))):
             error_msg = ("Int list in len(0).")
@@ -75,13 +79,41 @@ class IntCombinedInStrField(fields.String):
         return super().format(self.attribute)
 
 
+class result_json_encoder(json.JSONEncoder):
+
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        elif isinstance(obj, date):
+            return obj.strftime('%Y-%m-%d')
+        elif isinstance(obj, base_db_model):
+            json_obj = obj.to_json()
+            return json_obj
+        else:
+            return json.JSONEncoder.default(self, obj)
+
+
 def render_data(data, code=RET.S_OK, msg="ok"):
-    if (not isinstance(data, dict)):
-        return {"code": code, "msg": msg, "data": data}
+    if (not isinstance(data, (dict, list, base_db_model))):
+        json_obj = {"code": code, "msg": msg, "data": data}
+        return json_obj
+    elif (isinstance(data, list)):
+        if (data and isinstance(data[0], base_db_model)):
+            data_list = []
+            for d in data:
+                data_list.append(d.to_json())
+            json_obj = {"code": code, "msg": msg, "data": data_list}
+        else:
+            json_obj = json_obj = {"code": code, "msg": msg, "data": data}
+        return json_obj
+    elif (isinstance(data, base_db_model)):
+        json_obj = {"code": code, "msg": msg, "data": data.to_json()}
+        return json_obj
     elif (3 == len(set(["code", "data", "msg"]) & set(data.keys()))):
         return data
 
-    return {"code": code, "msg": msg, "data": data}
+    json_obj = {"code": code, "msg": msg, "data": data}
+    return json_obj
 
 
 int_record_fields = {

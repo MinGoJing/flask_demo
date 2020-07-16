@@ -14,6 +14,7 @@
 '''
 
 # py
+from sqlalchemy.exc import IntegrityError
 
 # flask alchemy transaction
 
@@ -37,6 +38,11 @@ def transaction(session):
                 print(e)
                 if (session.is_active):
                     session.rollback()
-                return {"code": e.code, "data": e.data, "msg": str(e)}
+                if (not isinstance(e, IntegrityError)):
+                    return {"code": e.code, "data": e.data, "msg": str(e)}
+                else:
+                    code = -1
+                    msg = "DB Error"
+                    return {"code": code, "data": 0, "msg": msg}
         return sub_wrapper
     return wrapper

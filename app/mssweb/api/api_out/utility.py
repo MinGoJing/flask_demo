@@ -15,9 +15,11 @@
 
 # py
 
-
 # flask
 from flask_restful import fields
+
+# local
+from .pub_dict import pub_dict_record_field
 
 # export
 __all__ = [
@@ -37,6 +39,8 @@ utility_record_field = {
     'operator_name': fields.String,
     'operate_time': fields.DateTime(),
     'description': fields.String,
+    "utility_main_group": fields.Nested(pub_dict_record_field),
+    "utility_sub_group": fields.Nested(pub_dict_record_field)
 }
 
 

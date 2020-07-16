@@ -14,10 +14,12 @@
 '''
 
 # py
-
+from datetime import date
+from datetime import datetime
 
 # falsk
 from flask_wtf import FlaskForm
+from flask_sqlalchemy.model import Model
 
 
 # exports
@@ -28,10 +30,6 @@ __all__ = [
     "g_exclude_attrs_from_db_model",
     "g_exclude_attrs_from_flask_form"
 ]
-
-
-# globals
-from flask_sqlalchemy.model import Model
 
 
 class mgt_c_base_object(object):
@@ -344,18 +342,15 @@ class mgt_c_object(object):
             for key, attr in json_keys.items():
                 j[attr] = self._local_json_parse(key)
         else:
+            local_attrs = self.attrs
             for attr in vars(self):
                 if (self._support_attr_list):
                     for attr in self._support_attr_list:
                         j[attr] = self._local_json_parse(attr)
 
                 else:
-                    if ("_" == attr[:1] or attr in self._exclude_attr_list):
-                        if (self._include_attr_list):
-                            if (attr not in self._include_attr_list):
-                                continue
-                        else:
-                            continue
+                    if (attr not in local_attrs):
+                        continue
                     j[attr] = self._local_json_parse(attr)
         return j
 
@@ -364,9 +359,12 @@ class mgt_c_object(object):
             return None
 
         v = getattr(self, attr)
-        if ((not isinstance(v, mgt_c_object))
-            and (not isinstance(v, list))
-                and (not isinstance(v, tuple))):
+        if (not isinstance(v, (mgt_c_object, list, tuple))):
+            # # open it when we must do date format translate
+            # if isinstance(v, datetime):
+            #     return v.strftime('%Y-%m-%d %H:%M:%S')
+            # elif isinstance(v, date):
+            #     return v.strftime('%Y-%m-%d')
             return v
         elif (isinstance(v, mgt_c_object)):
             return v.to_json()
@@ -376,26 +374,28 @@ class mgt_c_object(object):
     def to_model(self, model_cls=None, attr_map: dict = {}):
         if (model_cls is None):
             model_cls = self.entity_cls
-        m = model_cls()
-        if attr_map:
-            for key, attr in attr_map.items():
-                if (hasattr(m, attr)):
-                    setattr(m, attr, self._local_model_parse(key))
-        else:
-            for attr in vars(self):
-                if (self._support_attr_list):
-                    for attr in self._support_attr_list:
-                        setattr(m, attr, self._local_model_parse(attr))
 
-                else:
-                    if ("_" == attr[:1] or attr in self._exclude_attr_list):
-                        if (self._include_attr_list):
-                            if (attr not in self._include_attr_list):
-                                continue
-                        else:
+        attr_dict = {}
+
+        if (self._support_attr_list):
+            for key in vars(self):
+                attr = attr_map.get(key, key)
+                if key in self._support_attr_list:
+                    attr_dict[attr] = self._local_model_parse(key)
+
+        else:
+            for key in vars(self):
+                attr = attr_map.get(key, key)
+                if ("_" == key[:1] or key in self._exclude_attr_list):
+                    if (self._include_attr_list):
+                        if (key not in self._include_attr_list):
                             continue
-                    if (hasattr(m, attr)):
-                        setattr(m, attr, self._local_model_parse(attr))
+                    else:
+                        continue
+                if (hasattr(model_cls, attr)):
+                    attr_dict[attr] = self._local_model_parse(key)
+
+        m = model_cls(**attr_dict)
         return m
 
     def _local_model_parse(self, attr):
@@ -403,9 +403,7 @@ class mgt_c_object(object):
             return self._default_value_map.get(attr)
 
         v = getattr(self, attr)
-        if ((not isinstance(v, mgt_c_object))
-            and (not isinstance(v, list))
-                and (not isinstance(v, tuple))):
+        if ((not isinstance(v, (mgt_c_object, list, tuple)))):
             return v
         elif (isinstance(v, mgt_c_object)):
             return v.to_model()

@@ -93,10 +93,10 @@ class base_db_model(mgt_c_object):
 
         self._dispatch_relation_attr_default_value()
 
-        if (isinstance(key2attr_map, dict)):
-            self._key_2_db_attr_map = key2attr_map
-        elif (not self._key_2_db_attr_map):
+        if (not isinstance(self._key_2_db_attr_map, dict)):
             self._key_2_db_attr_map = {}
+        if (isinstance(key2attr_map, dict)):
+            self._key_2_db_attr_map.update(key2attr_map)
         if (self._key_2_db_attr_map and not self._db_attr_2_key_map):
             self._db_attr_2_key_map = copy.deepcopy(
                 self.__class__.db_attr_2_key_map())
@@ -124,7 +124,7 @@ class base_db_model(mgt_c_object):
 
     @property
     def key_2_db_attr_map(self):
-        pass
+        return self._key_2_db_attr_map
 
     @classmethod
     def db_attr_2_key_map(cls):
@@ -206,7 +206,7 @@ class base_db_model(mgt_c_object):
         return len(base_model_obj_list)
 
     @classmethod
-    def get(cls, query_map={}, to_user_obj=False) -> List[mgt_c_object]:
+    def get(cls, query_map={}, to_user_obj=True) -> List[mgt_c_object]:
         query, p_index, p_size = cls.gen_query(query_map)
         if (p_index):
             rcds = query.limit(p_size).offset(p_size * (p_index - 1))

@@ -39,7 +39,8 @@ from ..api_in import utility_dd_par
 from ..api_out import utility_record_fields
 from ..api_out import utility_records_fields
 
-# db processor
+# app,svc,db processor
+from app.mssweb.service import utility as utl_svc
 from app.mssweb.dao import utility_processor
 
 # log
@@ -78,7 +79,7 @@ class utility(Resource):
     def put(self, utility_id):
         params = utility_put_par.parse_args()
         utility_db_proc = utility_processor(params)
-        ret = utility_db_proc.update()
+        ret = utility_db_proc.update(unique_keys=["name"])
         return render_data(ret)
 
     @marshal_with(int_record_fields)
@@ -97,11 +98,11 @@ class utility_s(Resource):
     def post(self):
         params = utility_add_par.parse_args()
         utility_proc = utility_processor(params)
-        rcd = utility_proc.add()
+        rcd = utility_proc.add(unique_keys=["name"])
         return render_data(rcd)
 
     @marshal_with(utility_records_fields)
     def get(self, category=None, name=''):
         f_params = utility_get_par.parse_args()
-        rcds = utility_processor.get(f_params)
+        rcds = utl_svc.utility_s_get(f_params)
         return render_data(rcds)
