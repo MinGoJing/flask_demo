@@ -69,15 +69,15 @@ utility_get_par = CommonFilterParser()  # page, ids, disabled
 utility_get_par.add_argument('id',
                              type=int,
                              help='ID = ?')
-utility_get_par.replace_argument('name',
-                                 type=str,
-                                 help='name = ?(str)')
-utility_get_par.replace_argument('utility_main_group_name',
-                                 type=str,
-                                 help='Utility main group Name.')
-utility_get_par.replace_argument('utility_sub_group_name',
-                                 type=str,
-                                 help='Utility sub group Name.')
+utility_get_par.add_argument('name',
+                             type=str,
+                             help='name = ?(str)')
+utility_get_par.add_argument('utility_main_group_name',
+                             type=str,
+                             help='Utility main group Name.')
+utility_get_par.add_argument('utility_sub_group_name',
+                             type=str,
+                             help='Utility sub group Name.')
 
 # delete & disable
 utility_dd_par = CommonDisableParser()

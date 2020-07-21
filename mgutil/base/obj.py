@@ -395,7 +395,10 @@ class mgt_c_object(object):
                 if (hasattr(model_cls, attr)):
                     attr_dict[attr] = self._local_model_parse(key)
 
-        m = model_cls(**attr_dict)
+        real_dict = {key: value for key, value in attr_dict.items()
+                     if (value or (not value and not (value is None)
+                                   and not isinstance(value, (list, dict, tuple))))}
+        m = model_cls(**real_dict)
         return m
 
     def _local_model_parse(self, attr):

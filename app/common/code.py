@@ -117,6 +117,11 @@ class RET(mgt_c_base_result_code):
     ##=========================================================##
     E_ORM_ENTITY_NOT_FOUND_ERROR = \
         (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x500, 0x01))
+    E_ORM_JOIN_RULE_LENGTH_NOT_SUPPORTED_ERROR = \
+        (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x500, 0x02))
+    E_ENTITY_AUTO_JOIN_FAILED = \
+        (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x500, 0x03))
+
     E_ENTITY_UPDATE_UNIQUE_ERROR = \
         (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x400, 0x01))
 
@@ -166,6 +171,12 @@ class RET(mgt_c_base_result_code):
         E_ORM_ENTITY_NOT_FOUND_ERROR: {
             "en": "E_ORM_ENTITY_NOT_FOUND_ERROR",
             "zh-cn": "数据库表对象未找到"},
+        E_ORM_JOIN_RULE_LENGTH_NOT_SUPPORTED_ERROR: {
+            "en": "E_ORM_JOIN_RULE_LENGTH_NOT_SUPPORTED_ERROR",
+            "zh-cn": "ORM BaseDbProcessor生成JOIN语句时，JOIN条件超过支持的数量[2]"},
+        E_ENTITY_AUTO_JOIN_FAILED: {
+            "en": "E_ENTITY_AUTO_JOIN_FAILED",
+            "zh-cn": "ORM 自动生成JOIN规则失败"},
         E_ENTITY_UPDATE_UNIQUE_ERROR: {
             "en": "E_ENTITY_UPDATE_UNIQUE_ERROR",
             "zh-cn": "数据库表对象更新唯一性校验失败"},

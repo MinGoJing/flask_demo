@@ -121,3 +121,10 @@ int_record_fields = {
     "msg": fields.String(default="ok"),
     "data": fields.Integer,
 }
+
+
+raw_record_fields = {
+    "code": fields.Integer,
+    "msg": fields.String(default="ok"),
+    "data": fields.Raw,
+}

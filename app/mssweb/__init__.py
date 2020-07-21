@@ -14,11 +14,6 @@
 '''
 
 # py
-import os
-
-# flask restful
-from flask_restful import Api
-
 
 # api error
 from .api.error import errors

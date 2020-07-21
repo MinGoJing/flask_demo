@@ -33,6 +33,9 @@ __all__ = [
 class pub_dict_processor(base_db_update_model):
     _entity_cls = PubDict
     _null_supported_filter_attrs = []
+    # If NOT set, inner_join if foreign_key is NOT nullable else left_join
+    # Otherwise, default to leftjoin
+    _ex_join_rules_from_db_key = {}
     _key_2_db_attr_map = {
         "id2": "id"
     }

@@ -32,3 +32,18 @@
 [Sun,12-Jul-Y,16:33:43][SYS][db.py,172,add_many][ERROR] Entity <pub_dict> obj update <name:USER, category:config_type> unique check failed.
 [Sun,12-Jul-Y,16:36:02][SYS][db.py,172,add_many][ERROR] Entity <pub_dict> obj update <name:USER>, <name:USER>, <name:USER>, <name:USER>, <name:USER>, <name:USER>, <name:USER> unique check failed.
 [Thu,16-Jul-Y,06:43:10][SYS][db.py,155,add][ERROR] Entity <pub_dict> obj update unique <name:USER, category:config_type> check failed.
+[Sat,18-Jul-Y,05:19:11][SYS][db.py,155,add][ERROR] Entity <mssw_ultility> obj update unique <name:EC> check failed.
+[Sat,18-Jul-Y,05:20:27][SYS][db.py,155,add][ERROR] Entity <mssw_ultility> obj update unique <name:EC> check failed.
+[Sat,18-Jul-Y,05:20:48][SYS][db.py,155,add][ERROR] Entity <mssw_ultility> obj update unique <name:EC> check failed.
+[Sat,18-Jul-Y,05:22:59][SYS][db.py,155,add][ERROR] Entity <mssw_ultility> obj update unique <name:EC> check failed.
+[Sat,18-Jul-Y,05:23:28][SYS][db.py,155,add][ERROR] Entity <mssw_ultility> obj update unique <name:EC> check failed.
+[Sat,18-Jul-Y,05:40:13][SYS][db.py,155,add][ERROR] Entity <mssw_ultility> obj update unique <name:EC> check failed.
+[Sat,18-Jul-Y,05:53:05][SYS][db.py,155,add][ERROR] Entity <mssw_ultility> obj update unique <name:EC> check failed.
+[Sat,18-Jul-Y,05:55:07][SYS][db.py,155,add][ERROR] Entity <mssw_ultility> obj add unique <name:EC> check failed.
+[Sat,18-Jul-Y,08:11:02][SYS][file.py,46,mgf_match_ls_sub_names][ERROR] [/Users/mingo/develop/git/demos/flask_demo/app/mssweb/dao/__init__.py] is NOT a directory.
+[Sat,18-Jul-Y,08:34:46][SYS][db.py,155,add][ERROR] Entity <mssw_ultility> obj add unique <name:EC> check failed.
+[Sun,19-Jul-Y,08:36:00][SYS][db.py,158,add][ERROR] Entity <mssw_ultility> obj add unique <name:EC3> check failed.
+[Sun,19-Jul-Y,08:36:03][SYS][db.py,158,add][ERROR] Entity <mssw_ultility> obj add unique <name:EC3> check failed.
+[Mon,20-Jul-Y,20:48:06][SYS][db.py,160,add][ERROR] Entity <mssw_ultility> obj add unique <name:EC3> check failed.
+[Mon,20-Jul-Y,20:51:34][SYS][db.py,160,add][ERROR] Entity <mssw_ultility> obj add unique <name:EC4> check failed.
+[Tue,21-Jul-Y,06:47:22][SYS][db.py,160,add][ERROR] Entity <mssw_ultility> obj add unique <name:EC4> check failed.

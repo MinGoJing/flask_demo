@@ -14,23 +14,8 @@
 '''
 
 # py
+
+# export
 from .obj import mgt_c_object
 from .obj import *
-
-
-#
-def fmt_json_result(data, msg="success"):
-    if (not data):
-        return {"data": data,
-                "message": msg}
-
-    if (isinstance(data, mgt_c_object)):
-        return {"data": data.to_json(),
-                "message": msg}
-    elif (isinstance(data, (list, tuple))):
-        data_list = mgt_c_object.parse_list(data)
-        return {"data": data_list,
-                "message": msg}
-    else:
-        return {"data": data,
-                "message": msg}
+from .func import *

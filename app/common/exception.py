@@ -14,13 +14,13 @@
 '''
 
 # py
-from typing import List
 
 # local
 from .code import RET
 
-# mgutil
-from mgutil.base import mgt_c_object
+# log
+import logging
+log = logging.getLogger("MSS")
 
 
 class BaseDataRenderException(Exception):
@@ -61,6 +61,46 @@ class InvalidEntityClsException(BaseDataRenderException):
         code = RET.E_ORM_ENTITY_NOT_FOUND_ERROR
         if (not msg):
             msg = "%s: db entity[%s] NOT found." % (RET.INFO(code), data)
+        elif (not msg.startswith(RET.INFO(code))):
+            msg = "%s: %s" % (RET.INFO(code), msg)
+
+        log.error(msg)
+        BaseDataRenderException.__init__(self, msg, code, data=data)
+
+
+class QueryJoinRuleLengthNotSupportException(BaseDataRenderException):
+    """
+    @data : str
+        str: local_table.db_key
+
+    """
+
+    def __init__(self, data, msg=""):
+        code = RET.E_ORM_JOIN_RULE_LENGTH_NOT_SUPPORTED_ERROR
+        if (not msg):
+            msg = ("%s: db entity join from %s rule length NOT supported." % (
+                RET.INFO(code), data))
+        elif (not msg.startswith(RET.INFO(code))):
+            msg = "%s: %s" % (RET.INFO(code), msg)
+
+        BaseDataRenderException.__init__(self, msg, code, data=data)
+
+
+class EntityAutoJoinFailedException(BaseDataRenderException):
+    """
+    @data : str 'local_table.db_key'
+
+    """
+
+    def __init__(self, data, msg=""):
+        code = RET.E_ENTITY_AUTO_JOIN_FAILED
+        if (not msg):
+            msg = ("%s: db entity AUTO join from %s failed." % (
+                RET.INFO(code), data))
+        elif (not msg.startswith(RET.INFO(code))):
+            msg = "%s: %s" % (RET.INFO(code), msg)
+
+        log.error(msg)
         BaseDataRenderException.__init__(self, msg, code, data=data)
 
 
@@ -80,6 +120,10 @@ class BadParameterException(BaseDataRenderException):
             msg = ("%s: parameter[%s<%s> : %s] NOT in required type<%s>"
                    % (RET.INFO(code), data.get("name"), type(data.get("value")),
                       data.get("value"), data.get("type_req")))
+        elif (not msg.startswith(RET.INFO(code))):
+            msg = "%s: %s" % (RET.INFO(code), msg)
+
+        log.error(msg)
         BaseDataRenderException.__init__(
             self, msg, code, data=data)
 
@@ -112,6 +156,10 @@ class InvalidArgsException(BaseDataRenderException):
 
             msg = ("%s: NOT all parameters[%s] were given." % (
                 RET.INFO(code), args))
+        elif (not msg.startswith(RET.INFO(code))):
+            msg = "%s: %s" % (RET.INFO(code), msg)
+
+        log.error(msg)
         BaseDataRenderException.__init__(
             self, msg, code, data=data)
 
@@ -125,6 +173,10 @@ class QueryMapFormatException(BaseDataRenderException):
         code = RET.E_BAD_PARAMETER
         if (not msg):
             msg = "%s: %s" % (RET.INFO(code), msg)
+        elif (not msg.startswith(RET.INFO(code))):
+            msg = "%s: %s" % (RET.INFO(code), msg)
+
+        log.error(msg)
         BaseDataRenderException.__init__(
             self, msg, code, data=data)
 
@@ -136,21 +188,36 @@ class StringFieldEmptyException(BaseDataRenderException):
     """
 
     def __init__(self, data: str, msg=""):
-        code = RET.E_INVALID_ARGS
+        code = RET.E_INVALID_ARG
         if (not msg):
             msg = "{}: String field<{}> is empty.".format(RET.INFO(code), data)
+        elif (not msg.startswith(RET.INFO(code))):
+            msg = "%s: %s" % (RET.INFO(code), msg)
+
+        log.error(msg)
         BaseDataRenderException.__init__(self, msg, code, data)
 
 
 class EntityUpdateUniqueKeyExistsException(BaseDataRenderException):
     """
-    @data : mgt_c_object
-            Db entity class object
+    @data : (<str1>, <list:str2>). if msg is EMPTYs
+                str1: DB entity table name;
+                str2: unique key item of list;
+            <int>. if msg is NOT EMPTY
+                int: process result, usually
     """
 
-    def __init__(self, data: list, msg=""):
+    def __init__(self, data, msg=""):
         code = RET.E_ENTITY_UPDATE_UNIQUE_ERROR
         if (not msg):
-            msg = ( "{}: Entity <{}> object update <{}> unique check error.".format(
+            if (isinstance(data, (list, tuple))):
+                msg = ("{}: Entity <{}> object add/update <{}> unique check error.".format(
                     RET.INFO(code), *data))
-        BaseDataRenderException.__init__(self, msg, code, data)
+            else:
+                msg = ("{}: Entity object add/update failed 4 unique key check error.".format(
+                    RET.INFO(code)))
+        elif (not msg.startswith(RET.INFO(code))):
+            msg = "%s: %s" % (RET.INFO(code), msg)
+
+        log.error(msg)
+        BaseDataRenderException.__init__(self, msg, code, data=0)

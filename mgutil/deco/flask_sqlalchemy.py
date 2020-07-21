@@ -38,11 +38,16 @@ def transaction(session):
                 print(e)
                 if (session.is_active):
                     session.rollback()
-                if (not isinstance(e, IntegrityError)):
+                if (not isinstance(e, (IntegrityError, TypeError))):
                     return {"code": e.code, "data": e.data, "msg": str(e)}
-                else:
+                elif (IntegrityError):
                     code = -1
-                    msg = "DB Error"
-                    return {"code": code, "data": 0, "msg": msg}
+                    return {"code": code, "data": 0, "msg": str(e)}
+                elif (TypeError):
+                    code = -2
+                    return {"code": code, "data": 0, "msg": str(e)}
+                else:
+                    code = -9
+                    return {"code": code, "data": 0, "msg": str(e)}
         return sub_wrapper
     return wrapper

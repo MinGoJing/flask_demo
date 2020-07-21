@@ -17,9 +17,9 @@
 import copy
 from typing import List
 from datetime import datetime
+from werkzeug import import_string
 
 # flask
-from werkzeug import import_string
 from flask_restful import fields
 from sqlalchemy.inspection import inspect
 
@@ -36,7 +36,12 @@ from app import db
 from mgutil.file import mgf_match_ls_sub_names
 
 # local
-from .exception import QueryMapFormatException, EntityUpdateUniqueKeyExistsException
+from .code import RET
+from .code import FAILED
+from .exception import QueryMapFormatException
+from .exception import QueryJoinRuleLengthNotSupportException
+from .exception import EntityUpdateUniqueKeyExistsException
+from .exception import EntityAutoJoinFailedException
 
 # log
 import logging
@@ -48,6 +53,9 @@ __all__ = [
     "base_db_update_model",
     "init_db_processors"
 ]
+
+# global
+g_entity_table_2_processor_map = {}
 
 
 class base_db_model(mgt_c_object):
@@ -122,6 +130,13 @@ class base_db_model(mgt_c_object):
             return []
         return self._null_supported_filter_attrs
 
+    @classmethod
+    def ex_join_rules(cls):
+        if (hasattr(cls, "_ex_join_rules_from_db_key")):
+            return cls._ex_join_rules_from_db_key
+
+        return {}
+
     @property
     def key_2_db_attr_map(self):
         return self._key_2_db_attr_map
@@ -150,11 +165,10 @@ class base_db_model(mgt_c_object):
                     unique_identifier = "%s, %s:%s" % (
                         unique_identifier, unique_keys[i], self.__dict__.get(unique_keys[i]))
                 unique_identifier = unique_identifier[2:]
-                msg = "Entity <{}> obj update unique <{}> check failed.".format(self.entity_cls.__tablename__,
-                                                                                unique_identifier)
+                msg = ("Entity <{}> obj add unique <{}> check failed.".format(
+                    self._entity_cls.__tablename__, unique_identifier))
                 log.error(msg)
-                raise EntityUpdateUniqueKeyExistsException(data=[self.entity_cls.__tablename__,
-                                                                 unique_identifier])
+                raise EntityUpdateUniqueKeyExistsException(data=0, msg=msg)
         etty_obj = self.to_model(
             self._entity_cls, attr_map=self._key_2_db_attr_map)
         session.add(etty_obj)
@@ -194,13 +208,12 @@ class base_db_model(mgt_c_object):
 
             if (unique_identifier):
                 unique_identifier = unique_identifier[2:]
-                msg = "Entity <{}> obj update {} unique check failed.".format(obj0.entity_cls.__tablename__,
-                                                                              unique_identifier)
+                msg = ("Entity <{}> obj add_many {} unique check failed.".format(
+                    obj0.entity_cls.__tablename__, unique_identifier))
                 log.error(msg)
-                raise EntityUpdateUniqueKeyExistsException(data=[obj0.entity_cls.__tablename__,
-                                                                 unique_identifier])
+                raise EntityUpdateUniqueKeyExistsException(data=0, msg=msg)
 
-        db_model_obj_list = [obj.to_model(obj._entity_cls, )
+        db_model_obj_list = [obj.to_model(obj._entity_cls, attr_map=obj._key_2_db_attr_map)
                              for obj in base_model_obj_list]
         session.add_all(db_model_obj_list)
         return len(base_model_obj_list)
@@ -271,35 +284,61 @@ class base_db_model(mgt_c_object):
         except Exception:
             pass
 
+        key2attr = cls._key_2_db_attr_map if (
+            cls._key_2_db_attr_map is not None) else {}
+        joined_rule_keys = []
         for key, op_v in query_map.items():
+
             if (not key.count(".")):
                 # local Cls attr, support multifie attr(s) ends with 's'.
-                key2attr = cls._key_2_db_attr_map if (
-                    cls._key_2_db_attr_map is not None) else {}
-                attr = getattr(cls._entity_cls, key2attr.get(key, key), None)
-                attr_s = None
+                attr, attr_s, db_key, db_key_s = parse_attr_s(
+                    cls._entity_cls, key2attr, key)
 
                 if (not attr):
-                    if ("s" == key[-1]):
-                        key_s = key[:-1]
-                        attr_s = getattr(
-                            cls._entity_cls, key2attr.get(key_s, key_s), None)
+                    if (db_key_s is None):
+                        if (op_v is None and db_key not in cls._null_supported_filter_attrs):
+                            continue
+                    elif (op_v is None and db_key_s not in cls._null_supported_filter_attrs):
+                        continue
 
-                    if (not attr_s):
-                        raise QueryMapFormatException(data={key: op_v})
-                    else:
-                        attr = attr_s
+                    raise QueryMapFormatException(data={key: op_v})
             else:
-                # join Cls attr
+                # join pre entity Cls
                 #
                 key_list = key.split('.')
-                Cls = globals()[key_list[0]]
-                attr = Cls
-                for i in range(1, len(key_list)):
-                    i_key = key_list[i]
-                    attr = getattr(attr, i_key, None)
-                    if (not attr):
-                        raise QueryMapFormatException(data={key: op_v})
+                join_rule_list, attr, attr_s, db_key, db_keys = \
+                    parse_join_rule_n_attr_s(cls._entity_cls, key_list)
+
+                if (not attr):
+                    if (db_key_s is None):
+                        if (op_v is None and db_key not in cls._null_supported_filter_attrs):
+                            continue
+                    elif (op_v is None and db_key_s not in cls._null_supported_filter_attrs):
+                        continue
+
+                    raise QueryMapFormatException(data={key: op_v})
+
+                # let's join the new exist ones
+                for single_rule_key, remote_entity_cls, jointype, join_attr_pairs in join_rule_list:
+                    if (single_rule_key in joined_rule_keys):
+                        continue
+                    else:
+                        # we support only one join rule yet
+                        if (1 < len(join_attr_pairs)):
+                            data = "[%s] to [%s]" % (
+                                single_rule_key, str(join_attr_pairs[0]))
+                            raise QueryJoinRuleLengthNotSupportException(data)
+
+                        join_func = getattr(query, jointype, None)
+                        if (not join_func):
+                            raise Exception()
+
+                        rules = []
+                        for local_table_col, local_attr, remote_table_col, remote_attr in join_attr_pairs:
+                            rules.append(local_attr == remote_attr)
+
+                        query = join_func(remote_entity_cls, *rules)
+                        joined_rule_keys.append(single_rule_key)
 
             # op & value
             op = "eq"
@@ -406,25 +445,41 @@ def loc_analyze_attr_default_value(rel_dir):
         return None
 
 
+def parse_attr_s(entity_cls, key2attr_map, key):
+    db_key = key2attr_map.get(key, key)
+    db_key_s = None
+    attr = getattr(entity_cls, db_key, None)
+    attr_s = None
+
+    if (not attr and "s" == key[-1]):
+        key_s = key[:-1]
+        db_key_s = key2attr_map.get(key_s, key_s)
+        attr_s = getattr(entity_cls, db_key_s, None)
+    if (attr_s):
+        attr = attr_s
+
+    return attr, attr_s, db_key, db_key_s
+
+
 class base_db_update_model(base_db_model):
 
     def add(self, session=db.session, unique_keys=[]):
-        self.operator_id = 15
+        self.operator_id = None
         self.operate_time = datetime.now()
         return super().add(session, unique_keys)
 
     def add_many(self, session=db.session, unique_keys=[]):
-        self.operator_id = 15
+        self.operator_id = None
         self.operate_time = datetime.now()
         return super().add_many(session, unique_keys)
 
     def update(self, session=db.session, unique_keys=[]):
-        self.operator_id = 15
+        self.operator_id = None
         self.operate_time = datetime.now()
         return super().update(session, unique_keys)
 
 
-def init_db_processors(processor_dir_path):
+def init_db_processors(processor_dir_path, module_name):
     # init db_processor._db_attr_2_key_map
     sub_modules = mgf_match_ls_sub_names(processor_dir_path,
                                          match_exp="^(?!_).+$",
@@ -432,8 +487,164 @@ def init_db_processors(processor_dir_path):
     for mod in sub_modules:
         mod_name = mod.split('.')[0]
         db_processor = import_string(
-            "app.mssweb.dao.%s:%s_processor" % (mod_name, mod_name))
+            "app.%s.dao.%s:%s_processor" % (module_name, mod_name, mod_name))
         attr2key_map = db_processor.db_attr_2_key_map()
         table_name = str(db_processor._entity_cls.__tablename__)
         if (attr2key_map and not mgt_c_object._db_model_2_attr2key_map.get(table_name)):
             mgt_c_object._db_model_2_attr2key_map[table_name] = attr2key_map
+        g_entity_table_2_processor_map[table_name] = db_processor
+
+
+def parse_join_rule_n_attr_s(initial_entity_cls, key_list):
+    """
+    @Return :
+        @join_rule_list:
+        [
+            (
+                str0,       # local_table.local_db_key
+                <Model>,    # remote entity cls to join
+                jointype_str# outerjoin(left) 和 join
+                [
+                    [
+                    str1,   # local db attr key 'table1.key1'
+                    attr1,  # 'table1.key1' associated column attribute
+                    str2,   # remote db attr key 'table2.key2'
+                    attr2,  # 'table2.key2' associated column attribute
+                    ],
+                    ...
+                ]
+            ),
+            ...
+        ],
+        @attr,
+        @attr_s,
+        @db_key,
+        @db_key_s
+    """
+    # init
+    join_rule_list = []
+    local_entity_cls = initial_entity_cls
+    remote_entity_cls = None
+
+    # table join
+    for i in range(len(key_list) - 1):
+        # ready 4 next
+        if (remote_entity_cls):
+            local_entity_cls = remote_entity_cls
+
+        #
+        key = key_list[i]
+        table_name = local_entity_cls.__tablename__
+        local_processor = g_entity_table_2_processor_map[table_name]
+        local_key2attr = local_processor._key_2_db_attr_map if (
+            local_processor._key_2_db_attr_map is not None) else {}
+        db_key = local_key2attr.get(key, key)
+        remote_entity_cls, jointype, local_remote_join_pairs = parse_join_rule_with_single_remote_table(
+            local_processor, local_entity_cls, db_key
+        )
+        local_table_db_key = "%s.%s" % (table_name, db_key)
+
+        if (not remote_entity_cls):
+            msg = ("%s: Join from local db_attr[%s.%s] failed." % (
+                RET.INFO(RET.E_ENTITY_AUTO_JOIN_FAILED), table_name, db_key))
+            log.error(msg)
+            raise EntityAutoJoinFailedException(local_table_db_key)
+        if (1 < len(local_remote_join_pairs)):
+            msg = "%s" % (
+                RET.INFO(RET.E_ORM_JOIN_RULE_LENGTH_NOT_SUPPORTED_ERROR))
+            log.error(msg)
+            raise QueryJoinRuleLengthNotSupportException(local_table_db_key)
+
+        join_rule_list.append(
+            (local_table_db_key, remote_entity_cls,
+             jointype, local_remote_join_pairs))
+
+    # last attr
+    key = key_list[-1]
+    last_table_name = remote_entity_cls.__tablename__
+    last_processor = g_entity_table_2_processor_map[last_table_name]
+    last_key2attr = last_processor._key_2_db_attr_map if (
+        last_processor._key_2_db_attr_map is not None) else {}
+    attr, attr_s, db_key, db_key_s = parse_attr_s(
+        remote_entity_cls, last_key2attr, key)
+
+    return join_rule_list, attr, attr_s, db_key, db_key_s
+
+
+def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key):
+    """
+    @return : (Model, <list:<list:str1, attr1, str2, attr2>>)
+        @Model : remote entity class
+        @str: jointype: 'outerjoin', 'join'
+        @str1: local db attr key 'table1.key1'
+        @attr1: 'table1.key1' associated column attribute
+        @str2: remote db attr key 'table2.key2'
+        @attr2: 'table2.key2' associated column attribute
+    """
+
+    # init
+    remote_entity_cls = None
+    jointype = "outerjoin"
+    is_innerjoin = False
+    local_attr = None
+    local_table_key = "%s.%s" % (entity_cls.__tablename__, db_key)
+    remote_attr = None
+    remote_table_key = ""
+    relation_pairs = []
+
+    if (hasattr(entity_cls, db_key)):
+        # the db key is there, but no foreign key associated.
+        # let's check db_processor
+        ex_join_rules = db_processor.ex_join_rules()
+        if (db_key in ex_join_rules):
+            join_rule = ex_join_rules[db_key]
+            remote_entity_cls = join_rule["remote_entity_cls"]
+            jointype = join_rule["type"]
+            if (hasattr(entity_cls, db_key)):
+                local_attr = getattr(entity_cls, db_key)
+            else:
+                raise Exception()
+            remote_db_key = join_rule["remote_db_key"]
+            if (hasattr(remote_entity_cls, remote_db_key)):
+                remote_attr = getattr(remote_entity_cls, remote_db_key)
+            else:
+                raise Exception()
+            remote_table_key = "%s.%s" % (
+                remote_entity_cls.__table__name, remote_db_key)
+
+            relation_pairs.append(
+                [local_table_key, local_attr, remote_table_key, remote_attr])
+        else:
+            #
+            join_relations = inspect(entity_cls).relationships
+            tar_relation = getattr(join_relations, db_key, None)
+            if (not tar_relation):
+                # there's NO foreign key defined to get this remote entity relation
+                raise Exception()
+            else:
+                # Use db designed join attrss
+                local_remote_pairs = tar_relation.local_remote_pairs
+                for pair_local, pair_remote in local_remote_pairs:
+                    local_table_key = "%s.%s" % (
+                        pair_local.table.name, pair_local.key)
+                    remote_table_key = "%s.%s" % (
+                        pair_remote.table.name, pair_remote.key)
+
+                    local_entity_cls = g_entity_table_2_processor_map[pair_local.table.name]._entity_cls
+                    local_attr = getattr(
+                        local_entity_cls, pair_local.key, None)
+                    remote_entity_cls = g_entity_table_2_processor_map[pair_remote.table.name]._entity_cls
+                    remote_attr = getattr(
+                        remote_entity_cls, pair_remote.key, None)
+
+                    if (not is_innerjoin and local_attr):
+                        if (not local_attr.expression.nullable):
+                            is_innerjoin = True
+                            jointype = "join"
+
+                    relation_pairs.append([local_table_key, local_attr,
+                                           remote_table_key, remote_attr])
+    else:
+        raise Exception()
+
+    return remote_entity_cls, jointype, relation_pairs

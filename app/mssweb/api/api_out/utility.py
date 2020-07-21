@@ -37,7 +37,7 @@ utility_record_field = {
     'disabled': fields.Boolean,
     'operator_id': fields.Integer,
     'operator_name': fields.String,
-    'operate_time': fields.DateTime(),
+    'operate_time': fields.DateTime(dt_format="iso8601"),
     'description': fields.String,
     "utility_main_group": fields.Nested(pub_dict_record_field),
     "utility_sub_group": fields.Nested(pub_dict_record_field)
