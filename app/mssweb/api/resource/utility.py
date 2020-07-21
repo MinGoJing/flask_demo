@@ -104,5 +104,7 @@ class utility_s(Resource):
     @marshal_with(utility_records_fields)
     def get(self, category=None, name=''):
         f_params = utility_get_par.parse_args()
-        rcds = utl_svc.utility_s_get(f_params)
+        rcds = utl_svc.utility_s_get(
+            f_params, joined_keys=["fk_dict_utility_main_group",
+                                   "fk_dict_utility_sub_group"])
         return render_data(rcds)

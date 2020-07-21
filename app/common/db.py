@@ -22,6 +22,7 @@ from werkzeug import import_string
 # flask
 from flask_restful import fields
 from sqlalchemy.inspection import inspect
+from sqlalchemy.orm import joinedload
 
 # base util
 from mgutil.base import mgt_c_object
@@ -219,8 +220,13 @@ class base_db_model(mgt_c_object):
         return len(base_model_obj_list)
 
     @classmethod
-    def get(cls, query_map={}, to_user_obj=True) -> List[mgt_c_object]:
+    def get(cls, query_map={}, to_user_obj=True, joined_keys=[]) -> List[mgt_c_object]:
         query, p_index, p_size = cls.gen_query(query_map)
+        if (joined_keys):
+            key2attr = cls._key_2_db_attr_map
+            for key in joined_keys:
+                query = query.options(joinedload(key2attr.get(key, key)))
+
         if (p_index):
             rcds = query.limit(p_size).offset(p_size * (p_index - 1))
         else:
@@ -231,10 +237,14 @@ class base_db_model(mgt_c_object):
         return [cls(rcd) for rcd in rcds]
 
     @classmethod
-    def fetch(cls, query_map={}, to_user_obj=True):
+    def fetch(cls, query_map={}, to_user_obj=True, joined_keys=[]):
         if (not isinstance(query_map, dict)):
             query_map = {"id": query_map}
         query, p_index, p_size = cls.gen_query(query_map)
+        if (joined_keys):
+            key2attr = cls._key_2_db_attr_map
+            for key in joined_keys:
+                query = query.options(joinedload(key2attr.get(key, key)))
         rcd = query.first()
         if (not to_user_obj or not rcd):
             return rcd

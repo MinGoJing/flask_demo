@@ -35,10 +35,11 @@ class utility_processor(base_db_update_model):
     # Otherwise, default to leftjoin
     _ex_join_routes_from_db_key = {
         "fk_dict_main_group_id": {
-            "type": "leftjoin",
+            "type": "outerjoin",
             "remote_entity_cls": PubDict,
             "remote_db_key": "id",
-            "other_rules": []}
+            "other_rules": []
+        }
     }
     _key_2_db_attr_map = {
         "utility_main_group_id": "fk_dict_utility_main_group_id",

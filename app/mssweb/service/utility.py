@@ -19,7 +19,7 @@
 from app.mssweb.dao import utility_processor
 
 
-def utility_s_get(filter_param):
+def utility_s_get(filter_param, joined_keys=[]):
     if (filter_param.get("utility_main_group_name")):
         filter_param["utility_main_group.name"] = filter_param["utility_main_group_name"]
         filter_param.pop("utility_main_group_name")
@@ -27,4 +27,4 @@ def utility_s_get(filter_param):
         filter_param["utility_main_group.name"] = filter_param["utility_sub_group_name"]
         filter_param.pop("utility_sub_group_name")
 
-    return utility_processor.get(filter_param)
+    return utility_processor.get(filter_param, joined_keys=joined_keys)
