@@ -22,6 +22,7 @@ DB:
         DEBUG_DB: system
         # 4 SQLAlchemy Use release config always
         SQLALCHEMY_DATABASE_URI: ${DIALECT}+${DRIVER}://${USER}:${PASSWORD}@${HOST}:${PORT}/${DB}?charset=utf8
+        DEBUG_SQLALCHEMY_DATABASE_URI: ${DIALECT}+${DRIVER}://${DEBUG_USER}:${DEBUG_PASSWORD}@${DEBUG_HOST}:${DEBUG_PORT}/${DEBUG_DB}?charset=utf8
         SQLALCHEMY_TRACK_MODIFICATIONS: False
         SQLALCHEMY_ECHO: True
 

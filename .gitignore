@@ -1,6 +1,7 @@
 # exclude folders
 #
 __*/
+.*/
 build/
 dist/
 sdist/
@@ -11,8 +12,8 @@ wheels/
 *.egg-info/
 parts/
 var/
-docs/
-trd/*
+trd/
+upload/
 
 # include file patterns
 !__init__.py
@@ -22,3 +23,4 @@ trd/*
 *$py.class
 *workspace
 .*
+gen_models.py

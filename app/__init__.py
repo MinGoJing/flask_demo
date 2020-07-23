@@ -84,12 +84,14 @@ db_conf = conf.DB.MYSQL.to_json({"%sHOST" % (db_debug_prefix): "host",
                                  "%sUSER" % (db_debug_prefix): "user",
                                  "%sPASSWORD" % (db_debug_prefix): "password",
                                  "SQLALCHEMY_DATABASE_URI": "SQLALCHEMY_DATABASE_URI",
+                                 "DEBUG_SQLALCHEMY_DATABASE_URI": "DEBUG_SQLALCHEMY_DATABASE_URI",
                                  "SQLALCHEMY_TRACK_MODIFICATIONS": "SQLALCHEMY_TRACK_MODIFICATIONS",
                                  "SQLALCHEMY_ECHO": "SQLALCHEMY_ECHO"})
 db = None
 if (conf.DB.USE_SQLALCHEMY):
     # init sqlalchemy
-    app.config["SQLALCHEMY_DATABASE_URI"] = db_conf["SQLALCHEMY_DATABASE_URI"]
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_conf["%sSQLALCHEMY_DATABASE_URI" % (
+        db_debug_prefix)]
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = db_conf["SQLALCHEMY_TRACK_MODIFICATIONS"]
     app.config["SQLALCHEMY_ECHO"] = db_conf["SQLALCHEMY_ECHO"]
     db = SQLAlchemy(app, session_options={'autocommit': True})
