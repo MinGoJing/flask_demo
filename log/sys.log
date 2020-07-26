@@ -47,3 +47,11 @@
 [Mon,20-Jul-Y,20:48:06][SYS][db.py,160,add][ERROR] Entity <mssw_ultility> obj add unique <name:EC3> check failed.
 [Mon,20-Jul-Y,20:51:34][SYS][db.py,160,add][ERROR] Entity <mssw_ultility> obj add unique <name:EC4> check failed.
 [Tue,21-Jul-Y,06:47:22][SYS][db.py,160,add][ERROR] Entity <mssw_ultility> obj add unique <name:EC4> check failed.
+[Sat,25-Jul-Y,05:14:21][SYS][db.py,170,add][ERROR] Entity <msss_session> obj add unique <instance_id:1234> check failed.
+[Sat,25-Jul-Y,12:38:10][SYS][db.py,174,add][ERROR] Entity <msss_session> obj add unique <instance_id:1234> check failed.
+[Sat,25-Jul-Y,13:03:44][SYS][db.py,174,add][ERROR] Entity <msss_session> obj add unique <instance_id:1234> check failed.
+[Sat,25-Jul-Y,13:05:10][SYS][db.py,174,add][ERROR] Entity <msss_session> obj add unique <instance_id:1234> check failed.
+[Sat,25-Jul-Y,13:09:16][SYS][db.py,174,add][ERROR] Entity <msss_session> obj add unique <instance_id:1234> check failed.
+[Sat,25-Jul-Y,13:10:58][SYS][db.py,174,add][ERROR] Entity <msss_session> obj add unique <instance_id:1234> check failed.
+[Sat,25-Jul-Y,13:12:31][SYS][db.py,174,add][ERROR] Entity <msss_session> obj add unique <instance_id:1234> check failed.
+[Sat,25-Jul-Y,21:32:17][SYS][db.py,553,init_db_processors][INFO] entity columns.

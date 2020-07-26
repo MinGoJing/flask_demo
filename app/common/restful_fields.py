@@ -20,20 +20,21 @@ from datetime import datetime
 
 # flask
 from flask_restful import fields
+from flask_restful.fields import get_value
 from flask_restful.fields import String
 from flask_restful.fields import MarshallingException
 
 
 # local
 from . code import RET
-from .db import base_db_model
+from .db import base_db_processor
 from . exception import *
 
 # export
 __all__ = [
     "NoEmptyStringField",
     "IntCombinedInStrField",
-
+    "DateTimeStrField",
     "int_record_fields",
 ]
 
@@ -73,10 +74,60 @@ class IntCombinedInStrField(String):
         return v_list
 
     def output(self, key, obj):
-        return self.format(self.attribute)
+        return self.format(get_value(self.attribute, self.default))
 
     def translate(self, escape_tab):
-        return super().format(self.attribute)
+        return super().format(get_value(self.attribute, self.default))
+
+
+class DateTimeStrField(String):
+
+    def format(self, value):
+        v = String.format(self, value)
+
+        try:
+            dt = datetime.strptime(v, "%Y-%m-%d %H:%M:%S")
+            dt = dt
+        except Exception:
+            try:
+                dt = datetime.strptime(v, "%Y-%m-%dT%H:%M:%S")
+                dt = dt
+            except Exception:
+                error_msg = (
+                    "Datetime[%s] format ERROR type." % (v))
+                raise MarshallingException(error_msg)
+            v = v.replace("T",   " ")
+
+        return v
+
+    def output(self, key, obj):
+        return self.format(get_value(self.attribute, self.default))
+
+    def translate(self, escape_tab):
+        return super().format(get_value(self.attribute, self.default))
+
+
+class DictStrField(String):
+
+    def format(self, value):
+        v = String.format(self, value)
+
+        if (isinstance(v, dict)):
+            return v
+
+        try:
+            json.loads(v)
+        except Exception:
+            msg = ("DictStr[%s] format ERROR" % (v))
+            raise MarshallingException(msg)
+
+        return v
+
+    def output(self, key, obj):
+        return self.format(get_value(self.attribute, self.default))
+
+    def translate(self, escape_tab):
+        return super().format(get_value(self.attribute, self.default))
 
 
 class result_json_encoder(json.JSONEncoder):
@@ -86,7 +137,7 @@ class result_json_encoder(json.JSONEncoder):
             return obj.strftime('%Y-%m-%d %H:%M:%S')
         elif isinstance(obj, date):
             return obj.strftime('%Y-%m-%d')
-        elif isinstance(obj, base_db_model):
+        elif isinstance(obj, base_db_processor):
             json_obj = obj.to_json()
             return json_obj
         else:
@@ -94,11 +145,11 @@ class result_json_encoder(json.JSONEncoder):
 
 
 def render_data(data, code=RET.S_OK, msg="ok"):
-    if (not isinstance(data, (dict, list, base_db_model))):
+    if (not isinstance(data, (dict, list, base_db_processor))):
         json_obj = {"code": code, "msg": msg, "data": data}
         return json_obj
     elif (isinstance(data, list)):
-        if (data and isinstance(data[0], base_db_model)):
+        if (data and isinstance(data[0], base_db_processor)):
             data_list = []
             for d in data:
                 data_list.append(d.to_json())
@@ -106,7 +157,7 @@ def render_data(data, code=RET.S_OK, msg="ok"):
         else:
             json_obj = json_obj = {"code": code, "msg": msg, "data": data}
         return json_obj
-    elif (isinstance(data, base_db_model)):
+    elif (isinstance(data, base_db_processor)):
         json_obj = {"code": code, "msg": msg, "data": data.to_json()}
         return json_obj
     elif (3 == len(set(["code", "data", "msg"]) & set(data.keys()))):

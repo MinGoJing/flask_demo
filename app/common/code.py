@@ -92,8 +92,6 @@ class RET(mgt_c_base_result_code):
     S_OK = 0
     S_FALSE = 1
 
-    E_TYPE_FORMAT_CAST_ERROR = \
-        (FAIL_CODE(PLF_LAYER, MODULE_SYS, 0x500, 0x0b))
     E_FAIL = \
         (FAIL_CODE(PLF_LAYER, MODULE_SYS, 0x500, 0x01))
     E_NO_IMPL = \
@@ -110,6 +108,8 @@ class RET(mgt_c_base_result_code):
         (FAIL_CODE(PLF_LAYER, MODULE_SYS, 0x500, 0x09))
     E_INDEX_OUT_OF_RANGE = \
         (FAIL_CODE(PLF_LAYER, MODULE_SYS, 0x500, 0x0a))
+    E_TYPE_FORMAT_CAST_ERROR = \
+        (FAIL_CODE(PLF_LAYER, MODULE_SYS, 0x500, 0x0b))
     E_UNEXPECTED = (0x82F500FF)
 
     ##=========================================================##

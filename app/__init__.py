@@ -107,7 +107,7 @@ else:
 #
 # api
 sub_modules = mgf_match_ls_sub_names(PROJ_HOME_PATH + conf.SLASH + "app",
-                                     match_exp="^(?!common)[^_]+$",
+                                     match_exp="^[^_]+$",
                                      is_path_relative=True, match_opt=1)
 api = Api(app)
 # register blue prints

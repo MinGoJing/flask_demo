@@ -19,7 +19,7 @@
 from app.common.db import base_db_update_model
 
 # model
-from ..model import MsswUltility, PubDict
+from app.models import MsswUltility, PubDict
 
 # export
 __all__ = [

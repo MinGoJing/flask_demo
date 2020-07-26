@@ -9,6 +9,122 @@ Base = declarative_base()
 metadata = Base.metadata
 
 
+class MsssSession(Base):
+    __tablename__ = 'msss_session'
+
+    id = Column(Integer, primary_key=True)
+    instance_id = Column(String(45), nullable=False, unique=True)
+    name = Column(String(45))
+    init_time = Column(DateTime, nullable=False, server_default=FetchedValue())
+    start_time = Column(DateTime)
+    end_time = Column(DateTime)
+    status = Column(Integer, nullable=False, server_default=FetchedValue(
+    ), info='0: Created;\\n1: Started;\\n2: Crashed;\\n3: UserCanceled;\\n4: Finished;')
+    note = Column(String(200))
+
+
+class MsssSessionInput(Base):
+    __tablename__ = 'msss_session_input'
+    __table_args__ = (
+        Index('index', 'index', 'fk_session_id'),
+    )
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64))
+    index = Column(Integer, nullable=False, server_default=FetchedValue())
+    fk_session_id = Column(ForeignKey('msss_session.id'),
+                           nullable=False, index=True)
+    note = Column(String(200))
+
+    fk_session = relationship(
+        'MsssSession', primaryjoin='MsssSessionInput.fk_session_id == MsssSession.id', backref='msss_session_inputs')
+
+
+class MsssSessionInputValue(Base):
+    __tablename__ = 'msss_session_input_value'
+
+    id = Column(Integer, primary_key=True)
+    fk_session_input_id = Column(ForeignKey(
+        'msss_session_input.id'), nullable=False, index=True)
+    key = Column(String(64), nullable=False)
+    index = Column(Integer, nullable=False)
+    data_type = Column(Integer, nullable=False)
+    v1 = Column(String(64))
+    v2 = Column(String(64))
+    v3 = Column(String(512), info='Put json config/list here.')
+
+    fk_session_input = relationship(
+        'MsssSessionInput', primaryjoin='MsssSessionInputValue.fk_session_input_id == MsssSessionInput.id', backref='msss_session_input_values')
+
+
+class MsssSessionOutput(Base):
+    __tablename__ = 'msss_session_output'
+    __table_args__ = (
+        Index('index', 'index', 'fk_session_id'),
+    )
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64))
+    index = Column(Integer, nullable=False, server_default=FetchedValue())
+    fk_session_id = Column(ForeignKey('msss_session.id'),
+                           nullable=False, index=True)
+    note = Column(String(200))
+
+    fk_session = relationship(
+        'MsssSession', primaryjoin='MsssSessionOutput.fk_session_id == MsssSession.id', backref='msss_session_outputs')
+
+
+class MsssSessionOutputValue(Base):
+    __tablename__ = 'msss_session_output_value'
+
+    id = Column(Integer, primary_key=True)
+    fk_session_output_id = Column(ForeignKey(
+        'msss_session_output.id'), nullable=False, index=True)
+    key = Column(String(64), nullable=False)
+    index = Column(Integer, nullable=False)
+    data_type = Column(Integer, nullable=False)
+    v1 = Column(String(64))
+    v2 = Column(String(64))
+    v3 = Column(String(512), info='Put json config/list here.')
+
+    fk_session_output = relationship(
+        'MsssSessionOutput', primaryjoin='MsssSessionOutputValue.fk_session_output_id == MsssSessionOutput.id', backref='msss_session_output_values')
+
+
+class MsssSessionParameter(Base):
+    __tablename__ = 'msss_session_parameter'
+    __table_args__ = (
+        Index('index', 'index', 'fk_session_id'),
+    )
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64))
+    index = Column(Integer, nullable=False, server_default=FetchedValue())
+    fk_session_id = Column(ForeignKey('msss_session.id'),
+                           nullable=False, index=True)
+    note = Column(String(200))
+
+    fk_session = relationship(
+        'MsssSession', primaryjoin='MsssSessionParameter.fk_session_id == MsssSession.id', backref='msss_session_parameters')
+
+
+class MsssSessionParameterValue(Base):
+    __tablename__ = 'msss_session_parameter_value'
+
+    id = Column(Integer, primary_key=True)
+    fk_session_parameter_id = Column(ForeignKey(
+        'msss_session_parameter.id'), nullable=False, index=True)
+    key = Column(String(64), nullable=False)
+    index = Column(Integer, nullable=False)
+    data_type = Column(Integer, nullable=False)
+    v1 = Column(String(64))
+    v2 = Column(String(64))
+    v3 = Column(String(512), info='Put json config/list here.')
+
+    fk_session_parameter = relationship(
+        'MsssSessionParameter', primaryjoin='MsssSessionParameterValue.fk_session_parameter_id == MsssSessionParameter.id', backref='msss_session_parameter_values')
+
+
 class MsswFileResource(Base):
     __tablename__ = 'mssw_file_resource'
 
@@ -310,3 +426,63 @@ class PubDict(Base):
     operate_time = Column(DateTime, nullable=False,
                           server_default=FetchedValue())
     note = Column(String(200))
+
+
+class SysCompany(Base):
+    __tablename__ = 'sys_company'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64), nullable=False, unique=True)
+    note = Column(String(200))
+    disabled = Column(Integer, nullable=False, server_default=FetchedValue())
+    operator_id = Column(Integer)
+    operate_time = Column(DateTime, nullable=False,
+                          server_default=FetchedValue())
+
+
+class SysDepartment(Base):
+    __tablename__ = 'sys_department'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64), nullable=False, unique=True)
+    note = Column(String(200))
+    fk_sys_company_id = Column(ForeignKey('sys_company.id'), index=True)
+    disabled = Column(Integer, nullable=False, server_default=FetchedValue())
+    operator_id = Column(String(45))
+    operate_time = Column(DateTime, nullable=False,
+                          server_default=FetchedValue())
+
+    fk_sys_company = relationship(
+        'SysCompany', primaryjoin='SysDepartment.fk_sys_company_id == SysCompany.id', backref='sys_departments')
+
+
+class SysEmployee(Base):
+    __tablename__ = 'sys_employee'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64), nullable=False, unique=True)
+    note = Column(String(200))
+    fk_sys_department_id = Column(ForeignKey('sys_department.id'), index=True)
+    disabled = Column(Integer, nullable=False, server_default=FetchedValue())
+    operator_id = Column(Integer)
+    operate_time = Column(DateTime, nullable=False,
+                          server_default=FetchedValue())
+
+    fk_sys_department = relationship(
+        'SysDepartment', primaryjoin='SysEmployee.fk_sys_department_id == SysDepartment.id', backref='sys_employees')
+
+
+class SysUser(Base):
+    __tablename__ = 'sys_user'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64), nullable=False, unique=True)
+    email = Column(String(64))
+    fk_sys_employee_id = Column(ForeignKey('sys_employee.id'), index=True)
+    disabled = Column(Integer, nullable=False, server_default=FetchedValue())
+    operator_id = Column(Integer)
+    operate_time = Column(DateTime, nullable=False,
+                          server_default=FetchedValue())
+
+    fk_sys_employee = relationship(
+        'SysEmployee', primaryjoin='SysUser.fk_sys_employee_id == SysEmployee.id', backref='sys_users')

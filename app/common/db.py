@@ -17,7 +17,7 @@
 import copy
 from typing import List
 from datetime import datetime
-from werkzeug import import_string
+from werkzeug.utils import import_string
 
 # flask
 from flask_restful import fields
@@ -38,7 +38,6 @@ from mgutil.file import mgf_match_ls_sub_names
 
 # local
 from .code import RET
-from .code import FAILED
 from .exception import QueryMapFormatException
 from .exception import QueryJoinRuleLengthNotSupportException
 from .exception import EntityUpdateUniqueKeyExistsException
@@ -50,7 +49,7 @@ log = logging.getLogger("SYS")
 
 # export
 __all__ = [
-    "base_db_model",
+    "base_db_processor",
     "base_db_update_model",
     "init_db_processors"
 ]
@@ -59,7 +58,7 @@ __all__ = [
 g_entity_table_2_processor_map = {}
 
 
-class base_db_model(mgt_c_object):
+class base_db_processor(mgt_c_object):
     """
     @Summary: basic ORM entity processor.
             inherit this, and save a lot time in handlering basic AUDS process.
@@ -73,7 +72,9 @@ class base_db_model(mgt_c_object):
     _entity_cls = None
     _key_2_db_attr_map = None
     _db_attr_2_key_map = None
+    _unique_user_key_list = None
     _null_supported_filter_attrs = None
+    _entity_relation_backref_db_attr_list = None
 
     def __init__(self, in_obj={}, b_reverse=False, entity_cls_name=None, key2attr_map: dict = {}):
         from .exception import InvalidEntityClsException
@@ -90,15 +91,20 @@ class base_db_model(mgt_c_object):
         if (self._exclude_attr_list is None):
             self._exclude_attr_list = []
         self._exclude_attr_list += g_exclude_attrs_from_db_model
+        if (self._entity_relation_backref_db_attr_list is None):
+            self._entity_relation_backref_db_attr_list = []
         if (self._support_attr_list is None):
             self._support_attr_list = []
         self._support_attr_list += set(attr_list(
             self._entity_cls, exclude_attrs=self._exclude_attr_list,
-            attr2key_map=self.__class__.db_attr_2_key_map()))
+            attr2key_map=self.__class__.db_attr_2_key_map(),
+            entity_relation_backref_attrs=self._entity_relation_backref_db_attr_list))
         if (self._default_value_map is None):
             self._default_value_map = {}
         if (self._null_supported_filter_attrs is None):
             self._null_supported_filter_attrs = []
+        if (self._unique_user_key_list is None):
+            self._unique_user_key_list = []
 
         self._dispatch_relation_attr_default_value()
 
@@ -138,6 +144,12 @@ class base_db_model(mgt_c_object):
 
         return {}
 
+    @classmethod
+    def tablename(cls):
+        if (hasattr(cls._entity_cls, "__tablename__")):
+            return cls._entity_cls.__tablename__
+        return "<tablename not found>"
+
     @property
     def key_2_db_attr_map(self):
         return self._key_2_db_attr_map
@@ -155,21 +167,21 @@ class base_db_model(mgt_c_object):
 
     @transaction(session=db.session)
     def add(self, session=db.session, unique_keys=[]):
+        if (not unique_keys):
+            unique_keys = self._unique_user_key_list
         if (unique_keys):
             fetch_params = {}
             for key in unique_keys:
                 fetch_params[key] = self.__dict__.get(key)
-            fetch_obj = self.__class__.fetch(fetch_params)
+            fetch_obj = self.__class__.fetch(fetch_params, session=session)
             if (fetch_obj):
                 unique_identifier = ""
                 for i in range(0, len(unique_keys)):
                     unique_identifier = "%s, %s:%s" % (
                         unique_identifier, unique_keys[i], self.__dict__.get(unique_keys[i]))
                 unique_identifier = unique_identifier[2:]
-                msg = ("Entity <{}> obj add unique <{}> check failed.".format(
-                    self._entity_cls.__tablename__, unique_identifier))
-                log.error(msg)
-                raise EntityUpdateUniqueKeyExistsException(data=0, msg=msg)
+                raise EntityUpdateUniqueKeyExistsException(
+                    (self._entity_cls.__tablename__, unique_identifier))
         etty_obj = self.to_model(
             self._entity_cls, attr_map=self._key_2_db_attr_map)
         session.add(etty_obj)
@@ -179,15 +191,16 @@ class base_db_model(mgt_c_object):
     @classmethod
     @transaction(session=db.session)
     def add_many(cls, base_model_obj_list, unique_keys=[], session=db.session):
+        if (not unique_keys):
+            unique_keys = cls._unique_user_key_list
         if (unique_keys):
             fetch_params = {}
             unique_identifier = ""
-            obj0 = base_model_obj_list[0]
             if (1 == len(unique_keys)):
                 key = unique_keys[0]
                 fetch_params[key] = {"op": "in",
                                      "value": [obj.__dict__.get(key) for obj in base_model_obj_list]}
-                fetch_objs = obj0.__class__.get(fetch_params)
+                fetch_objs = cls.get(fetch_params, session=session)
                 if (fetch_objs):
                     for fetch_obj in fetch_objs:
                         unique_identifier = "%s, <%s:%s>" % (
@@ -197,7 +210,7 @@ class base_db_model(mgt_c_object):
                 for obj in base_model_obj_list:
                     for key in unique_keys:
                         fetch_params[key] = obj.__dict__.get(key)
-                    fetch_obj = obj.__class__.fetch(fetch_params)
+                    fetch_obj = cls.fetch(fetch_params)
                     if (fetch_obj):
                         unique_identifier_p = ""
                         for i in range(0, len(unique_keys)):
@@ -210,7 +223,7 @@ class base_db_model(mgt_c_object):
             if (unique_identifier):
                 unique_identifier = unique_identifier[2:]
                 msg = ("Entity <{}> obj add_many {} unique check failed.".format(
-                    obj0.entity_cls.__tablename__, unique_identifier))
+                    cls.tablename(), unique_identifier))
                 log.error(msg)
                 raise EntityUpdateUniqueKeyExistsException(data=0, msg=msg)
 
@@ -220,8 +233,8 @@ class base_db_model(mgt_c_object):
         return len(base_model_obj_list)
 
     @classmethod
-    def get(cls, query_map={}, to_user_obj=True, joined_keys=[]) -> List[mgt_c_object]:
-        query, p_index, p_size = cls.gen_query(query_map)
+    def get(cls, query_map={}, to_user_obj=True, joined_keys=[], session=db.session) -> List[mgt_c_object]:
+        query, p_index, p_size = cls.gen_query(query_map, session=session)
         if (joined_keys):
             key2attr = cls._key_2_db_attr_map
             for key in joined_keys:
@@ -237,10 +250,10 @@ class base_db_model(mgt_c_object):
         return [cls(rcd) for rcd in rcds]
 
     @classmethod
-    def fetch(cls, query_map={}, to_user_obj=True, joined_keys=[]):
+    def fetch(cls, query_map={}, to_user_obj=True, joined_keys=[], session=db.session):
         if (not isinstance(query_map, dict)):
             query_map = {"id": query_map}
-        query, p_index, p_size = cls.gen_query(query_map)
+        query, p_index, p_size = cls.gen_query(query_map, session=session)
         if (joined_keys):
             key2attr = cls._key_2_db_attr_map
             for key in joined_keys:
@@ -252,7 +265,7 @@ class base_db_model(mgt_c_object):
         return cls(rcd)
 
     @classmethod
-    def gen_query(cls, query_map={}):
+    def gen_query(cls, query_map={}, session=db.session):
         """
             @Summary :  OrderBy, GroupBy 在gen_query()外部写；
                         关联对象的 joinload(Target) 自己在获取query之后写；
@@ -279,7 +292,7 @@ class base_db_model(mgt_c_object):
                     between 对于 between
                     等等
         """
-        query = cls._entity_cls.query
+        query = session.query(cls._entity_cls)
         page_index = query_map.get("page_index")
         page_size = query_map.get("page_size")
         b_limit = (not (page_index is None and page_size is None))
@@ -311,7 +324,8 @@ class base_db_model(mgt_c_object):
                     elif (op_v is None and db_key_s not in cls._null_supported_filter_attrs):
                         continue
 
-                    raise QueryMapFormatException(data={key: op_v})
+                    raise QueryMapFormatException(
+                        data=(cls.tablename(), "%s: %s" % (key, op_v)))
             else:
                 # join pre entity Cls
                 #
@@ -326,7 +340,8 @@ class base_db_model(mgt_c_object):
                     elif (op_v is None and db_key_s not in cls._null_supported_filter_attrs):
                         continue
 
-                    raise QueryMapFormatException(data={key: op_v})
+                    raise QueryMapFormatException(
+                        data=(cls.tablename(), "%s: %s" % (key, op_v)))
 
                 # let's join the new exist ones
                 for single_rule_key, remote_entity_cls, jointype, join_attr_pairs in join_rule_list:
@@ -371,7 +386,8 @@ class base_db_model(mgt_c_object):
                     op = op_v["op"]
                     value = op_v["value"]
                 except Exception:
-                    raise QueryMapFormatException(data={key: op_v})
+                    raise QueryMapFormatException(
+                        data=(cls.tablename(), "%s: %s" % (key, op_v)))
             if (isinstance(value, fields.Raw)):
                 value = value.format(value.default)
 
@@ -390,12 +406,14 @@ class base_db_model(mgt_c_object):
                         ['__%s__', '%s_', '%s']
                     ))[0] % op
                 except IndexError:
-                    raise QueryMapFormatException(data={key: op_v})
+                    raise QueryMapFormatException(
+                        data=(cls.tablename(), "%s: %s" % (key, op_v)))
 
                 rule = getattr(attr, op_attr)(value)
             else:
                 if (not isinstance(value, (list, tuple)) or 2 > len(value)):
-                    raise QueryMapFormatException(data={key: op_v})
+                    raise QueryMapFormatException(
+                        data=(cls.tablename(), "%s: %s" % (key, op_v)))
                 rule = attr.between(value[0], value[1])
             query = query.filter(rule)
 
@@ -407,11 +425,13 @@ class base_db_model(mgt_c_object):
 
     @transaction(session=db.session)
     def update(self, session=db.session, unique_keys=[]):
+        if (not unique_keys):
+            unique_keys = self._unique_user_key_list
         if (unique_keys):
             fetch_params = {"id": {"op": "ne", "value": self.id}}
             for key in unique_keys:
                 fetch_params[key] = self.__dict__.get(key)
-            fetch_obj = self.__class__.fetch(fetch_params)
+            fetch_obj = self.__class__.fetch(fetch_params, session=session)
             if (fetch_obj):
                 unique_identifier = ""
                 for i in range(0, len(unique_keys)):
@@ -471,17 +491,20 @@ def parse_attr_s(entity_cls, key2attr_map, key):
     return attr, attr_s, db_key, db_key_s
 
 
-class base_db_update_model(base_db_model):
+class base_db_update_model(base_db_processor):
 
     def add(self, session=db.session, unique_keys=[]):
         self.operator_id = None
         self.operate_time = datetime.now()
         return super().add(session, unique_keys)
 
-    def add_many(self, session=db.session, unique_keys=[]):
-        self.operator_id = None
-        self.operate_time = datetime.now()
-        return super().add_many(session, unique_keys)
+    @classmethod
+    def add_many(cls, base_model_obj_list, unique_keys=[], session=db.session):
+        now = datetime.now()
+        for obj in base_model_obj_list:
+            obj.operator_id = None
+            obj.operate_time = now
+        return super().add_many(base_model_obj_list, unique_keys, session)
 
     def update(self, session=db.session, unique_keys=[]):
         self.operator_id = None
@@ -494,15 +517,73 @@ def init_db_processors(processor_dir_path, module_name):
     sub_modules = mgf_match_ls_sub_names(processor_dir_path,
                                          match_exp="^(?!_).+$",
                                          is_path_relative=True, match_opt=0)
+    # init entity backref attrs
+    # "table_name" : {
+    #   "processor": db_processor cls,
+    #   "attr_list": <list:str>
+    #   "attr_default_value_list": <list:(None|[])>
+    # }
+
     for mod in sub_modules:
+        # iterate db_processor
         mod_name = mod.split('.')[0]
         db_processor = import_string(
             "app.%s.dao.%s:%s_processor" % (module_name, mod_name, mod_name))
+        if (not db_processor):
+            msg = ("Please define db_processor LIKE ${filename_base}_processor. "
+                   "We'll do some init for your db_processor.")
+            raise Exception(msg)
+
+        # init db_processor 2 db_attr2key map
         attr2key_map = db_processor.db_attr_2_key_map()
         table_name = str(db_processor._entity_cls.__tablename__)
-        if (attr2key_map and not mgt_c_object._db_model_2_attr2key_map.get(table_name)):
-            mgt_c_object._db_model_2_attr2key_map[table_name] = attr2key_map
+        if (attr2key_map and not mgt_c_object._table_2_db_attr2key_map.get(table_name)):
+            mgt_c_object._table_2_db_attr2key_map[table_name] = attr2key_map
+        # init tablename 2 db_processor map
         g_entity_table_2_processor_map[table_name] = db_processor
+
+        # init backref db keys
+        relation_ships = inspect(db_processor._entity_cls).relationships
+        if (not db_processor._entity_relation_backref_db_attr_list):
+            db_processor._entity_relation_backref_db_attr_list = []
+        for tar_relation in relation_ships:
+            if (not tar_relation.backref):
+                db_processor._entity_relation_backref_db_attr_list.append(
+                    tar_relation.key)
+        # affect to mgt_c_object._to_model_excelude_db_attr_list
+        if (not db_processor._to_model_excelude_db_attr_list):
+            db_processor._to_model_excelude_db_attr_list = db_processor._entity_relation_backref_db_attr_list
+        else:
+            db_processor._to_model_excelude_db_attr_list += db_processor._entity_relation_backref_db_attr_list
+
+        # init db_processor _unique_user_key_list
+        uq_user_keys = []
+        entity_cls = db_processor._entity_cls
+        db_attrs = attr_list(entity_cls,
+                             include_attrs=[],
+                             exclude_attrs=[] if (
+                                 db_processor._exclude_attr_list is None) else db_processor._exclude_attr_list,
+                             attr2key_map={},
+                             entity_relation_backref_attrs=db_processor._entity_relation_backref_db_attr_list)
+        for db_attr in db_attrs:
+            col = getattr(entity_cls, db_attr)
+            if (hasattr(col, "comparator") and hasattr(col.comparator, "unique")):
+                if (col.comparator.unique):
+                    uq_user_keys.append(attr2key_map.get(db_attr, db_attr))
+        if (1 == len(uq_user_keys)):
+            db_processor._unique_user_key_list = uq_user_keys
+        elif (hasattr(entity_cls, "__table_args__")):
+            uq_user_keys = []
+            for arg in entity_cls.__table_args__:
+                if (str(arg).startswith("Index(")):
+                    for col in arg.columns:
+                        uq_user_keys.append(attr2key_map.get(col.key, col.key))
+                break
+            db_processor._unique_user_key_list = uq_user_keys
+        elif (not db_processor._unique_user_key_list):
+            db_processor._unique_user_key_list = []
+
+    return
 
 
 def parse_join_rule_n_attr_s(initial_entity_cls, key_list):
@@ -583,9 +664,9 @@ def parse_join_rule_n_attr_s(initial_entity_cls, key_list):
 
 def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key):
     """
-    @return : (Model, <list:<list:str1, attr1, str2, attr2>>)
+    @return : (Model, str0, <list:<list:str1, attr1, str2, attr2>>)
         @Model : remote entity class
-        @str: jointype: 'outerjoin', 'join'
+        @str0: jointype: 'outerjoin'(leftjoin), 'join'
         @str1: local db attr key 'table1.key1'
         @attr1: 'table1.key1' associated column attribute
         @str2: remote db attr key 'table2.key2'
@@ -632,7 +713,7 @@ def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key):
                 # there's NO foreign key defined to get this remote entity relation
                 raise Exception()
             else:
-                # Use db designed join attrss
+                # Use db designed join attrs
                 local_remote_pairs = tar_relation.local_remote_pairs
                 for pair_local, pair_remote in local_remote_pairs:
                     local_table_key = "%s.%s" % (

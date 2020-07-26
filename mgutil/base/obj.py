@@ -18,8 +18,8 @@ from datetime import date
 from datetime import datetime
 
 # falsk
+from flask_restful import fields
 from flask_wtf import FlaskForm
-from flask_sqlalchemy.model import Model
 
 
 # exports
@@ -116,8 +116,9 @@ class mgt_c_object(object):
     # user support attribute list, could be reset by reset()
     _user_support_attr_list = None
 
-    # global shared, defined 4 mgt_c_object reverse init from Model class
-    _db_model_2_attr2key_map = {}
+    # global shared, defined 4 mgt_c_object reverse init from db entity class
+    _table_2_db_attr2key_map = {}  # this is a global map
+    _to_model_excelude_db_attr_list = None
 
     def __init__(self, input_obj={}, b_reserve=False):
         if (self._user_support_attr_list is None):
@@ -128,6 +129,8 @@ class mgt_c_object(object):
             self._exclude_attr_list = []
         if (self._support_attr_list is None):
             self._support_attr_list = []
+        if (self._to_model_excelude_db_attr_list is None):
+            self._to_model_excelude_db_attr_list = []
         if (self._eq_exclude_attr_list is None):
             self._eq_exclude_attr_list = ["_include_attr_list",
                                           "_support_attr_list",
@@ -139,9 +142,8 @@ class mgt_c_object(object):
         if (self._default_value_map is None):
             self._default_value_map = {}
 
-        if (not input_obj or (not isinstance(input_obj, dict)
-                              and not (isinstance(input_obj, Model))
-                              and not isinstance(input_obj, FlaskForm))):
+        if (not input_obj or (not isinstance(input_obj, (dict, FlaskForm))
+                              and not is_db_entity(input_obj))):
             return
         elif (isinstance(input_obj, FlaskForm)):
             if (not self._exclude_attr_list):
@@ -149,7 +151,7 @@ class mgt_c_object(object):
             else:
                 self._exclude_attr_list += list(set(self._exclude_attr_list) &
                                                 set(g_exclude_attrs_from_flask_form))
-        elif (not Model or isinstance(input_obj, Model)):
+        elif (is_db_entity(input_obj)):
             if (not self._exclude_attr_list):
                 self._exclude_attr_list = g_exclude_attrs_from_db_model
             else:
@@ -166,7 +168,7 @@ class mgt_c_object(object):
         # set value
         if (isinstance(input_obj, dict)):
             self._local_json_init(input_obj, b_reserve)
-        elif (isinstance(input_obj, Model)):
+        elif (is_db_entity(input_obj)):
             self._local_model_init(input_obj, b_reserve)
         elif (isinstance(input_obj, FlaskForm)):
             self._local_form_init(input_obj, b_reserve)
@@ -233,10 +235,10 @@ class mgt_c_object(object):
                         self._include_attr_list.append(key)
 
     def _local_setattr(self, key, value, b_reserve=False):
-        if (not b_reserve or (not isinstance(value, (dict, Model, FlaskForm, list, tuple)))):
+        if (not b_reserve or (not isinstance(value, (dict, list, tuple, FlaskForm))
+                              and not is_db_entity(value))):
             setattr(self, key, value)
-        elif (isinstance(value, dict) or (isinstance(value, Model))
-              or isinstance(value, FlaskForm)):
+        elif (isinstance(value, (dict, FlaskForm)) or is_db_entity(value)):
             v_obj = mgt_c_object(value, b_reserve)
             setattr(self, key, v_obj)
         else:
@@ -253,9 +255,10 @@ class mgt_c_object(object):
 
         v_list = []
         for v in value_list:
-            if ((not isinstance(v, (dict, Model, FlaskForm, list, tuple)))):
+            if (not isinstance(v, (dict, list, tuple, FlaskForm))
+                    and not is_db_entity(v)):
                 v_list.append(v)
-            elif (isinstance(v, (dict, Model, FlaskForm))):
+            elif (isinstance(v, (dict, FlaskForm)) or is_db_entity(v)):
                 v_obj = mgt_c_object(v, True)
                 v_list.append(v_obj)
             else:
@@ -289,7 +292,9 @@ class mgt_c_object(object):
 
     @property
     def entity_cls(self):
-        return self._entity_cls
+        if (hasattr(self, "_entity_cls")):
+            return self._entity_cls
+        return None
 
     @property
     def attrs(self):
@@ -304,7 +309,7 @@ class mgt_c_object(object):
     @classmethod
     def db_attr_2_key_map(cls, entity_instance):
         table_name = entity_instance.__class__.__tablename__
-        return cls._db_model_2_attr2key_map.get(table_name, {})
+        return cls._table_2_db_attr2key_map.get(table_name, {})
 
     def set_support_attrs(self, usr_sup_attrs=[]):
         if (not usr_sup_attrs):
@@ -380,7 +385,8 @@ class mgt_c_object(object):
         if (self._support_attr_list):
             for key in vars(self):
                 attr = attr_map.get(key, key)
-                if key in self._support_attr_list:
+                if (key in self._support_attr_list
+                        and attr not in self._to_model_excelude_db_attr_list):
                     attr_dict[attr] = self._local_model_parse(key)
 
         else:
@@ -392,7 +398,8 @@ class mgt_c_object(object):
                             continue
                     else:
                         continue
-                if (hasattr(model_cls, attr)):
+                if (hasattr(model_cls, attr)
+                        and attr not in self._to_model_excelude_db_attr_list):
                     attr_dict[attr] = self._local_model_parse(key)
 
         real_dict = {key: value for key, value in attr_dict.items()
@@ -407,7 +414,9 @@ class mgt_c_object(object):
 
         v = getattr(self, attr)
         if ((not isinstance(v, (mgt_c_object, list, tuple)))):
-            return v
+            if (not isinstance(v, fields.Raw)):
+                return v
+            return v.format(v.default)
         elif (isinstance(v, mgt_c_object)):
             return v.to_model()
         else:
@@ -446,7 +455,8 @@ class mgt_c_object(object):
             return True
 
 
-def attr_list(cls, include_attrs=[], exclude_attrs=[], attr2key_map={}):
+def attr_list(cls, include_attrs=[], exclude_attrs=[],
+              attr2key_map={}, entity_relation_backref_attrs=[]):
     key_list = []
 
     for attr in dir(cls):
@@ -455,4 +465,12 @@ def attr_list(cls, include_attrs=[], exclude_attrs=[], attr2key_map={}):
                 and (key not in exclude_attrs)):
             key_list.append(key)
 
+    for attr in entity_relation_backref_attrs:
+        key = attr2key_map.get(attr, attr)
+        key_list.append(key)
+
     return key_list
+
+
+def is_db_entity(input_obj):
+    return hasattr(input_obj, "__tablename__")

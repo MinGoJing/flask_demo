@@ -20,7 +20,7 @@
 from app.common.db import base_db_update_model
 
 # model
-from ..model import MsswProces
+from app.models import MsswProces
 
 # export
 __all__ = [

@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 5.5.5-10.4.12-MariaDB)
 # Database: system
-# Generation Time: 2020-07-23 13:54:06 +0000
+# Generation Time: 2020-07-23 14:22:07 +0000
 # ************************************************************
 
 
@@ -27,7 +27,7 @@ DROP TABLE IF EXISTS `msss_session`;
 
 CREATE TABLE `msss_session` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `instance_id` int(11) DEFAULT NULL,
+  `instance_id` varchar(45) NOT NULL,
   `name` varchar(45) DEFAULT NULL,
   `init_time` datetime NOT NULL DEFAULT current_timestamp(),
   `start_time` datetime DEFAULT NULL,
@@ -36,6 +36,45 @@ CREATE TABLE `msss_session` (
   `note` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `instance_id_UNIQUE` (`instance_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+# Dump of table msss_session_input
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `msss_session_input`;
+
+CREATE TABLE `msss_session_input` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(64) DEFAULT NULL,
+  `index` int(11) NOT NULL DEFAULT 0,
+  `fk_session_id` int(11) NOT NULL,
+  `note` varchar(200) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX (`index`, `fk_session_id`),
+  CONSTRAINT `ss_input_fk_session_id_2_session` FOREIGN KEY (`fk_session_id`) REFERENCES `msss_session` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+# Dump of table msss_session_input_value
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `msss_session_input_value`;
+
+CREATE TABLE `msss_session_input_value` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `fk_session_input_id` int(11) NOT NULL,
+  `key` varchar(64) NOT NULL,
+  `index` int(11) NOT NULL,
+  `data_type` int(11) NOT NULL,
+  `v1` varchar(64) DEFAULT NULL,
+  `v2` varchar(64) DEFAULT NULL,
+  `v3` varchar(512) DEFAULT NULL COMMENT 'Put json config/list here.',
+  PRIMARY KEY (`id`),
+  KEY `ss_pv_fk_session_input_id_2_session_input_idx` (`fk_session_input_id`),
+  CONSTRAINT `ss_pv_fk_session_input_id_2_session_input` FOREIGN KEY (`fk_session_input_id`) REFERENCES `msss_session_input` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -52,8 +91,7 @@ CREATE TABLE `msss_session_parameter` (
   `fk_session_id` int(11) NOT NULL,
   `note` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `index_UNIQUE` (`index`),
-  UNIQUE KEY `fk_session_id_UNIQUE` (`fk_session_id`),
+  UNIQUE INDEX (`index`, `fk_session_id`),
   CONSTRAINT `ss_parameter_fk_session_id_2_session` FOREIGN KEY (`fk_session_id`) REFERENCES `msss_session` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -76,6 +114,45 @@ CREATE TABLE `msss_session_parameter_value` (
   PRIMARY KEY (`id`),
   KEY `ss_pv_fk_session_parameter_id_2_session_parameter_idx` (`fk_session_parameter_id`),
   CONSTRAINT `ss_pv_fk_session_parameter_id_2_session_parameter` FOREIGN KEY (`fk_session_parameter_id`) REFERENCES `msss_session_parameter` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+# Dump of table msss_session_output
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `msss_session_output`;
+
+CREATE TABLE `msss_session_output` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(64) DEFAULT NULL,
+  `index` int(11) NOT NULL DEFAULT 0,
+  `fk_session_id` int(11) NOT NULL,
+  `note` varchar(200) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX (`index`, `fk_session_id`),
+  CONSTRAINT `ss_output_fk_session_id_2_session` FOREIGN KEY (`fk_session_id`) REFERENCES `msss_session` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+# Dump of table msss_session_output_value
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `msss_session_output_value`;
+
+CREATE TABLE `msss_session_output_value` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `fk_session_output_id` int(11) NOT NULL,
+  `key` varchar(64) NOT NULL,
+  `index` int(11) NOT NULL,
+  `data_type` int(11) NOT NULL,
+  `v1` varchar(64) DEFAULT NULL,
+  `v2` varchar(64) DEFAULT NULL,
+  `v3` varchar(512) DEFAULT NULL COMMENT 'Put json config/list here.',
+  PRIMARY KEY (`id`),
+  KEY `ss_pv_fk_session_output_id_2_session_output_idx` (`fk_session_output_id`),
+  CONSTRAINT `ss_pv_fk_session_output_id_2_session_output` FOREIGN KEY (`fk_session_output_id`) REFERENCES `msss_session_output` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 

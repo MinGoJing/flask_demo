@@ -19,7 +19,7 @@
 from app.common.db import base_db_update_model
 
 # model
-from ..model import MsswProgram
+from app.models import MsswProgram
 
 # export
 __all__ = [

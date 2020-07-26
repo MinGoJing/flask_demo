@@ -14,3 +14,14 @@
 '''
 
 # py
+
+# local exception
+from .exception import *
+
+# export
+errors = {
+    "EntityUpdateUniqueKeyExistsException": {
+        "message": "EntityUpdateUniqueKeyExistsException",
+        "status": 400
+    }
+}

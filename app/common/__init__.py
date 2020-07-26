@@ -15,6 +15,14 @@
 
 # py
 
+# errors
+from .error import errors
 
 # export
 from .db import *
+
+
+def init_module(api):
+    # merge exceptions
+    # api.errors.update(errors)
+    pass

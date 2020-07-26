@@ -63,12 +63,12 @@ dict_get_par = CommonFilterParser()
 dict_get_par.add_argument("id",
                           type=int,
                           help="ID = ?")
-dict_get_par.replace_argument("category",
-                              type=str,
-                              help="category = ?")
-dict_get_par.replace_argument("name",
-                              type=str,
-                              help="name = ?")
+dict_get_par.add_argument("category",
+                          type=str,
+                          help="category = ?")
+dict_get_par.add_argument("name",
+                          type=str,
+                          help="name = ?")
 
 # del & dis
 dict_dd_par = CommonDisableParser()

@@ -15,6 +15,10 @@
 
 # py
 
+# flask
+from flask import request, json
+from werkzeug.exceptions import HTTPException
+
 # local
 from .code import RET
 
@@ -23,201 +27,153 @@ import logging
 log = logging.getLogger("MSS")
 
 
-class BaseDataRenderException(Exception):
+class APIException(HTTPException):
     """
     base data & code render Exception
     """
-    _data = None
-    _code = None
+    _ret_cls = RET
+    # key data 4 msg content
+    data = None
+    # full environment data
+    raw_data = None
+    code = RET.E_UNEXPECTED
+    msg = "Ops, API unexpected error occurs."
 
-    def __init__(self, msg="Data Render Message", code: int = RET.S_OK, data=None):
-        self._data = data
-        self._code = code
-        Exception.__init__(self, msg)
+    def __init__(self, data=None, msg="", raw_data=None, lan="en"):
+        self.data = data
+        self.msg = "%s: %s" % (self._ret_cls.INFO(self.code, lan), self.msg)
+        self.init_msg(data, msg)
+
+        log.error(self.msg)
+        HTTPException.__init__(self, self.msg)
+
+    def __str__(self):
+        return self.msg
+
+    def get_response(self):
+        d = {
+            "msg": self.msg,
+            "code": self.code,
+            "data": self.raw_data
+        }
+        return d
+
+    def get_headers(self):
+        return [("content-type", "application/json")]
+
+    def get_body(self, environ):
+        resp = {
+            "msg": self.msg,
+            "code": self.code,
+            "data": self.raw_data
+        }
+        return json.dumps(resp)
+
+    def init_msg(self, data=None, msg=""):
+        if (data and not msg):
+            try:
+                if (not isinstance(data, (tuple, list, dict))):
+                    self.msg = self.msg.format(data)
+                elif (isinstance(data, (list, tuple))):
+                    p_cnt = self.msg.count("{}")
+                    if (p_cnt == len(data)):
+                        self.msg = self.msg.format(*data)
+                    elif (p_cnt == 1):
+                        self.msg = self.msg.format(data)
+                    else:
+                        assert(-1)
+                elif (isinstance(data, (dict))):
+                    self.msg = self.msg.format(**data)
+            except Exception as e:
+                print(e)
+                assert(-1)
+        elif (not msg.startswith(RET.INFO(self.code))):
+            msg = "%s: %s" % (RET.INFO(self.code), msg)
+        else:
+            self.msg = msg
+
+        return
 
     @property
-    def code(self):
-        return self._code
-
-    @property
-    def data(self):
-        return self._data
-
-    @property
-    def http_code(self):
-        hex_code = (self._code >> 8) & (0x0FFF)
+    def status(self):
+        hex_code = (self.code >> 8) & (0x0FFF)
         http_code = (hex_code >> 8) * 100 + \
-                    ((hex_code >> 4) & 0x0F) * 10 + (hex_code & 0x0F)
+            ((hex_code >> 4) & 0x0F) * 10 + (hex_code & 0x0F)
         return http_code
 
 
-class InvalidEntityClsException(BaseDataRenderException):
+class InvalidEntityClsException(APIException):
     """
     @data : str
-            Entity class name.
+            entity name
     """
 
-    def __init__(self, data, msg=""):
-        code = RET.E_ORM_ENTITY_NOT_FOUND_ERROR
-        if (not msg):
-            msg = "%s: db entity[%s] NOT found." % (RET.INFO(code), data)
-        elif (not msg.startswith(RET.INFO(code))):
-            msg = "%s: %s" % (RET.INFO(code), msg)
-
-        log.error(msg)
-        BaseDataRenderException.__init__(self, msg, code, data=data)
+    code = RET.E_ORM_ENTITY_NOT_FOUND_ERROR
+    msg = "db entity[{}] NOT found."
 
 
-class QueryJoinRuleLengthNotSupportException(BaseDataRenderException):
+class QueryJoinRuleLengthNotSupportException(APIException):
     """
     @data : str
         str: local_table.db_key
 
     """
-
-    def __init__(self, data, msg=""):
-        code = RET.E_ORM_JOIN_RULE_LENGTH_NOT_SUPPORTED_ERROR
-        if (not msg):
-            msg = ("%s: db entity join from %s rule length NOT supported." % (
-                RET.INFO(code), data))
-        elif (not msg.startswith(RET.INFO(code))):
-            msg = "%s: %s" % (RET.INFO(code), msg)
-
-        BaseDataRenderException.__init__(self, msg, code, data=data)
+    code = RET.E_ORM_JOIN_RULE_LENGTH_NOT_SUPPORTED_ERROR
+    msg = ("db entity join <{}> rule length NOT supported.")
 
 
-class EntityAutoJoinFailedException(BaseDataRenderException):
+class EntityAutoJoinFailedException(APIException):
     """
-    @data : str 'local_table.db_key'
+    @data : str: 
+            'local_table.db_key'
 
     """
-
-    def __init__(self, data, msg=""):
-        code = RET.E_ENTITY_AUTO_JOIN_FAILED
-        if (not msg):
-            msg = ("%s: db entity AUTO join from %s failed." % (
-                RET.INFO(code), data))
-        elif (not msg.startswith(RET.INFO(code))):
-            msg = "%s: %s" % (RET.INFO(code), msg)
-
-        log.error(msg)
-        BaseDataRenderException.__init__(self, msg, code, data=data)
+    code = RET.E_ENTITY_AUTO_JOIN_FAILED
+    msg = ("db entity AUTO join from <{}> failed.")
 
 
-class BadParameterException(BaseDataRenderException):
+class BadParameterException(APIException):
     """
-    @data :
-        {
-            "name": <str>,
-            "value": <Any>,
-            "type_req": <type>  # type required
-        }
+    @data : (str, type1, any_value, type2)
+        @str  : parameter name
+        @type1: current type
+        @any  : current value
+        @type2: required type
     """
-
-    def __init__(self, data: dict, msg=""):
-        code = RET.E_BAD_PARAMETER
-        if (not msg):
-            msg = ("%s: parameter[%s<%s> : %s] NOT in required type<%s>"
-                   % (RET.INFO(code), data.get("name"), type(data.get("value")),
-                      data.get("value"), data.get("type_req")))
-        elif (not msg.startswith(RET.INFO(code))):
-            msg = "%s: %s" % (RET.INFO(code), msg)
-
-        log.error(msg)
-        BaseDataRenderException.__init__(
-            self, msg, code, data=data)
+    code = RET.E_BAD_PARAMETER
+    msg = ("parameter[{}<{}> : {}] NOT in required type<{}>")
 
 
-class InvalidArgsException(BaseDataRenderException):
+class InvalidArgsException(APIException):
     """
-    @data :
-        [
-            {
-                "name": <str>,
-                "type": <type>
-            },
-            ...
-        ]
+    @data : str : invalid parameter names seperated with ','
     """
-
-    def __init__(self, data: list, msg=""):
-        code = RET.E_BAD_PARAMETER
-        if (not msg):
-            args = ""
-            if ((isinstance(data, list)
-                 or isinstance(data, tuple))
-                    and data):
-                args = "%s<%s>" % (data[0].get("name"), data[0].get("type"))
-                if (1 < len(data)):
-                    for i in range(1, len(data)):
-                        d = data[i]
-                        args = "%s, %s<%s>" % (
-                            args, d.get("name"), d.get("type"))
-
-            msg = ("%s: NOT all parameters[%s] were given." % (
-                RET.INFO(code), args))
-        elif (not msg.startswith(RET.INFO(code))):
-            msg = "%s: %s" % (RET.INFO(code), msg)
-
-        log.error(msg)
-        BaseDataRenderException.__init__(
-            self, msg, code, data=data)
+    code = RET.E_INVALID_ARG
+    msg = ("NOT all parameters[{}] were given.")
 
 
-class QueryMapFormatException(BaseDataRenderException):
+class QueryMapFormatException(APIException):
     """
-
+    @data : str : error query map keys seperated with ','
     """
-
-    def __init__(self, data: dict, msg=""):
-        code = RET.E_BAD_PARAMETER
-        if (not msg):
-            msg = "%s: %s" % (RET.INFO(code), msg)
-        elif (not msg.startswith(RET.INFO(code))):
-            msg = "%s: %s" % (RET.INFO(code), msg)
-
-        log.error(msg)
-        BaseDataRenderException.__init__(
-            self, msg, code, data=data)
+    code = RET.E_BAD_PARAMETER
+    msg = "entity <{}> query map keys<{}> error."
 
 
-class StringFieldEmptyException(BaseDataRenderException):
+class StringFieldEmptyException(APIException):
     """
     @data : str
             filed name.
     """
-
-    def __init__(self, data: str, msg=""):
-        code = RET.E_INVALID_ARG
-        if (not msg):
-            msg = "{}: String field<{}> is empty.".format(RET.INFO(code), data)
-        elif (not msg.startswith(RET.INFO(code))):
-            msg = "%s: %s" % (RET.INFO(code), msg)
-
-        log.error(msg)
-        BaseDataRenderException.__init__(self, msg, code, data)
+    code = RET.E_INVALID_ARG
+    msg = ("String field<{}> is empty.")
 
 
-class EntityUpdateUniqueKeyExistsException(BaseDataRenderException):
+class EntityUpdateUniqueKeyExistsException(APIException):
     """
-    @data : (<str1>, <list:str2>). if msg is EMPTYs
-                str1: DB entity table name;
-                str2: unique key item of list;
-            <int>. if msg is NOT EMPTY
-                int: process result, usually
+    @data : (<str1>, <list:str2>)
+        @str1: DB entity table name;
+        @str2: unique key item of list;
     """
-
-    def __init__(self, data, msg=""):
-        code = RET.E_ENTITY_UPDATE_UNIQUE_ERROR
-        if (not msg):
-            if (isinstance(data, (list, tuple))):
-                msg = ("{}: Entity <{}> object add/update <{}> unique check error.".format(
-                    RET.INFO(code), *data))
-            else:
-                msg = ("{}: Entity object add/update failed 4 unique key check error.".format(
-                    RET.INFO(code)))
-        elif (not msg.startswith(RET.INFO(code))):
-            msg = "%s: %s" % (RET.INFO(code), msg)
-
-        log.error(msg)
-        BaseDataRenderException.__init__(self, msg, code, data=0)
+    code = RET.E_ENTITY_UPDATE_UNIQUE_ERROR
+    msg = ("Entity <{}> object add/update <{}> unique check error.")

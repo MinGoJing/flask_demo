@@ -16,11 +16,11 @@
 # py
 
 # common
-from app.common.db import base_db_model
+from app.common.db import base_db_processor
 
 # model
-from ..model import PubDict
+from app.models import PubDict
 
 
-class pub_dict_processor(base_db_model):
+class pub_dict_processor(base_db_processor):
     _entity_cls = PubDict

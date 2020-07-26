@@ -2,16 +2,23 @@
 # -*- encoding: utf-8 -*-
 '''
 @File    :   __init__.py
-@Desc    :   provide mssweb entity models
+@Desc    :   provide msscmp API resources
 @Version :   1.0
 @Author  :   MinGo
 @Contact :   mingo_jing@163.com
 @License :   (C)Copyright since 2020, MinGo
 @History :   
-    1.0: 2020/05/28 22:09, MinGo
+    1.0: 2020/07/22 06:28, MinGo
           1. Created.
 
 '''
 
 # py
-from .models import *
+
+
+# export
+from .code import *
+from .error import errors
+from .exception import *
+from .api_in import *
+from .resource import *
