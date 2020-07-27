@@ -14,3 +14,49 @@
 '''
 
 # py
+
+
+# ****************************************************************************
+#   Layer Codes Area Define!
+#   Use the lowest level that the error occurs
+# ****************************************************************************
+from app.common.code import PLF_LAYER
+from app.common.code import SVC_LAYER
+from app.common.code import APP_LAYER
+from app.common.code import API_LAYER
+from app.common.code import TRD_LAYER
+
+
+# ***************************************************************************
+#  Const & Basic Function Define!
+# ***************************************************************************
+from app.common.code import FAIL_CODE
+from app.common.code import SUCCESS_CODE
+
+
+"""****************************************************************************
+ * Module Codes Area Define!
+****************************************************************************"""
+##=========================================================##
+# Modules base
+##=========================================================##
+MODULE_COMP = 0x1000000
+
+
+class RET(object):
+    ##=========================================================##
+    # API - system
+    ##=========================================================##
+    E_ = \
+        (FAIL_CODE(API_LAYER, MODULE_COMP, 0x500, 0x01))
+
+    _info_dict = {
+        # API - SYS
+        E_: {
+            "en": "E_",
+            "zh-cn": "wei"},
+
+        None: {
+            "en": "<RET NOT FOUND>",
+            "zh-cn": "<未知返回值>"}
+    }

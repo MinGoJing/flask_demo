@@ -15,8 +15,7 @@
 
 # py
 
-# api error
-from .api.error import errors
+
 # api resource
 from .api.resource.session import session
 from .api.resource.session import session_s
@@ -27,9 +26,6 @@ from .api.resource.session_output_value import session_output_value_s
 
 
 def init_module(api):
-    # merge exceptions
-    # api.errors.update(errors)
-
     # add resource
     api.add_resource(session, '/session/<session_id>', endpoint='session')
     api.add_resource(session_s, '/sessions', endpoint='sessions')

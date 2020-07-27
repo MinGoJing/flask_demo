@@ -37,7 +37,8 @@ class MsssSessionInput(Base):
     note = Column(String(200))
 
     fk_session = relationship(
-        'MsssSession', primaryjoin='MsssSessionInput.fk_session_id == MsssSession.id', backref='msss_session_inputs')
+        # , backref='msss_session_inputs')
+        'MsssSession', primaryjoin='MsssSessionInput.fk_session_id == MsssSession.id')
 
 
 class MsssSessionInputValue(Base):
@@ -397,6 +398,7 @@ class MsswUltility(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(64), nullable=False)
+    display_name = Column(String(128), nullable=False)
     fk_dict_utility_main_group_id = Column(
         ForeignKey('pub_dict.id'), nullable=False, index=True)
     fk_dict_utility_sub_group_id = Column(

@@ -311,6 +311,17 @@ class mgt_c_object(object):
         table_name = entity_instance.__class__.__tablename__
         return cls._table_2_db_attr2key_map.get(table_name, {})
 
+    def sub_feature_fetch(self, key_root=""):
+        if (not key_root):
+            return self
+
+        if (not isinstance(key_root, (list, tuple, str))):
+            return None
+
+        # # TODO: jmj,
+        # key_list = []
+        # if ()
+
     def set_support_attrs(self, usr_sup_attrs=[]):
         if (not usr_sup_attrs):
             return False

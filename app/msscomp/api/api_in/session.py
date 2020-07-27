@@ -36,21 +36,9 @@ __all__ = [
 # session
 # add
 session_add_par = RequestParser()
-session_add_par.add_argument('instance_id', required=True,
+session_add_par.add_argument('name', required=True,
                              type=str,
-                             help='instance_id str(36). (Required)')
-session_add_par.add_argument('init_time',
-                             type=DateTimeStrField,
-                             help='Session init time.')
-session_add_par.add_argument('start_time',
-                             type=DateTimeStrField,
-                             help='Session start time.')
-session_add_par.add_argument('end_time',
-                             type=DateTimeStrField,
-                             help='Session end time.')
-session_add_par.add_argument('status',
-                             type=int, default=0,
-                             help='Session status[0: Created 1: Started 2: Crashed 3: UserCanceled 4: Finished].')
+                             help='program_name. (Required)')
 session_add_par.add_argument('note',
                              type=str,
                              help='note.')
@@ -76,6 +64,9 @@ session_get_par.add_argument('id',
 session_get_par.add_argument('instance_id',
                              type=int,
                              help='Instance ID = ?')
+session_get_par.add_argument('input_name',
+                             type=str,
+                             help='session input name = ?')
 session_get_par.add_argument('status',
                              type=int,
                              help='Session status[0: Created 1: Started 2: Crashed 3: UserCanceled 4: Finished].')

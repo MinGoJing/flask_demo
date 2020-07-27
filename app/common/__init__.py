@@ -15,11 +15,10 @@
 
 # py
 
-# errors
-from .error import errors
-
 # export
 from .db import *
+from .code import *
+from .exception import *
 
 
 def init_module(api):

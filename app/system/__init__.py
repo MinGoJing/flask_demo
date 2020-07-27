@@ -20,13 +20,10 @@
 from flask_restful import Api
 
 
-# ap
-from .api.error import errors
+# api
 from .api.resource import *
 
 
-def init_module(api: Api = api):
-    # merge exceptions
-    api.errors.update(errors)
-
+def init_module(api):
     # add resource
+    pass

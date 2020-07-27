@@ -27,8 +27,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Api
 
 # util
-from mgutil.parser import mgt_c_yaml_object
 from mgutil.db import Mysql
+from mgutil.parser import mgt_c_yaml_object
 from mgutil.file import mgf_match_ls_sub_names
 
 

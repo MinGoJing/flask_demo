@@ -73,13 +73,10 @@ TRD_LAYER = 0x0D000000
 MODULE_DB = 0x0000000
 MODULE_ORM = 0x0100000
 MODULE_SYS = 0x0200000
+MODULE_REQ = 0x0300000
 
 
-class mgt_c_base_result_code(object):
-    pass
-
-
-class RET(mgt_c_base_result_code):
+class RET(object):
     ##=========================================================##
     # TimeOut Codes Area!
     ##=========================================================##
@@ -124,6 +121,12 @@ class RET(mgt_c_base_result_code):
 
     E_ENTITY_UPDATE_UNIQUE_ERROR = \
         (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x400, 0x01))
+
+    ##=========================================================##
+    # API - request
+    ##=========================================================##
+    E_REQUEST_BAD_PARAMETER = \
+        (FAIL_CODE(API_LAYER, MODULE_REQ, 0x400, 0x01))
 
     _info_dict = {
         # PLF - SYS
@@ -180,6 +183,12 @@ class RET(mgt_c_base_result_code):
         E_ENTITY_UPDATE_UNIQUE_ERROR: {
             "en": "E_ENTITY_UPDATE_UNIQUE_ERROR",
             "zh-cn": "数据库表对象更新唯一性校验失败"},
+
+        # API REQ
+        #
+        E_REQUEST_BAD_PARAMETER: {
+            "en": "E_ENTITY_UPDATE_UNIQUE_ERROR",
+            "zh-cn": "Request请求参数有误"},
 
         None: {
             "en": "<RET NOT FOUND>",

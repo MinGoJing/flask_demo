@@ -166,7 +166,7 @@ class base_db_processor(mgt_c_object):
             return cls._db_attr_2_key_map
 
     @transaction(session=db.session)
-    def add(self, session=db.session, unique_keys=[]):
+    def add(self, session=db.session, unique_keys=[], do_flush=False):
         if (not unique_keys):
             unique_keys = self._unique_user_key_list
         if (unique_keys):
@@ -185,12 +185,13 @@ class base_db_processor(mgt_c_object):
         etty_obj = self.to_model(
             self._entity_cls, attr_map=self._key_2_db_attr_map)
         session.add(etty_obj)
-        session.flush()
+        if (do_flush):
+            session.flush()
         return etty_obj.id
 
     @classmethod
     @transaction(session=db.session)
-    def add_many(cls, base_model_obj_list, unique_keys=[], session=db.session):
+    def add_many(cls, base_model_obj_list, unique_keys=[], session=db.session, do_flush=False):
         if (not unique_keys):
             unique_keys = cls._unique_user_key_list
         if (unique_keys):
@@ -222,14 +223,14 @@ class base_db_processor(mgt_c_object):
 
             if (unique_identifier):
                 unique_identifier = unique_identifier[2:]
-                msg = ("Entity <{}> obj add_many {} unique check failed.".format(
-                    cls.tablename(), unique_identifier))
-                log.error(msg)
-                raise EntityUpdateUniqueKeyExistsException(data=0, msg=msg)
+                raise EntityUpdateUniqueKeyExistsException(
+                    data=(cls.tablename(), unique_identifier))
 
         db_model_obj_list = [obj.to_model(obj._entity_cls, attr_map=obj._key_2_db_attr_map)
                              for obj in base_model_obj_list]
         session.add_all(db_model_obj_list)
+        if (do_flush):
+            session.flush()
         return len(base_model_obj_list)
 
     @classmethod
@@ -330,8 +331,8 @@ class base_db_processor(mgt_c_object):
                 # join pre entity Cls
                 #
                 key_list = key.split('.')
-                join_rule_list, attr, attr_s, db_key, db_keys = \
-                    parse_join_rule_n_attr_s(cls._entity_cls, key_list)
+                join_rule_list, attr, attr_s, db_key, db_keys = parse_join_rule_n_attr_s(
+                    cls._entity_cls, key_list)
 
                 if (not attr):
                     if (db_key_s is None):
@@ -493,18 +494,18 @@ def parse_attr_s(entity_cls, key2attr_map, key):
 
 class base_db_update_model(base_db_processor):
 
-    def add(self, session=db.session, unique_keys=[]):
+    def add(self, session=db.session, unique_keys=[], do_flush=False):
         self.operator_id = None
         self.operate_time = datetime.now()
-        return super().add(session, unique_keys)
+        return super().add(session, unique_keys, do_flush=do_flush)
 
     @classmethod
-    def add_many(cls, base_model_obj_list, unique_keys=[], session=db.session):
+    def add_many(cls, base_model_obj_list, unique_keys=[], session=db.session, do_flush=False):
         now = datetime.now()
         for obj in base_model_obj_list:
             obj.operator_id = None
             obj.operate_time = now
-        return super().add_many(base_model_obj_list, unique_keys, session)
+        return super().add_many(base_model_obj_list, unique_keys, session=session, do_flush=do_flush)
 
     def update(self, session=db.session, unique_keys=[]):
         self.operator_id = None
@@ -564,9 +565,11 @@ def init_db_processors(processor_dir_path, module_name):
                              exclude_attrs=[] if (
                                  db_processor._exclude_attr_list is None) else db_processor._exclude_attr_list,
                              attr2key_map={},
-                             entity_relation_backref_attrs=db_processor._entity_relation_backref_db_attr_list)
+                             entity_relation_backref_attrs=[])
         for db_attr in db_attrs:
-            col = getattr(entity_cls, db_attr)
+            col = getattr(entity_cls, db_attr, None)
+            if (not col):
+                continue
             if (hasattr(col, "comparator") and hasattr(col.comparator, "unique")):
                 if (col.comparator.unique):
                     uq_user_keys.append(attr2key_map.get(db_attr, db_attr))
@@ -683,10 +686,10 @@ def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key):
     remote_table_key = ""
     relation_pairs = []
 
-    if (hasattr(entity_cls, db_key)):
+    ex_join_rules = db_processor.ex_join_rules()
+    if (hasattr(entity_cls, db_key) or ex_join_rules):
         # the db key is there, but no foreign key associated.
         # let's check db_processor
-        ex_join_rules = db_processor.ex_join_rules()
         if (db_key in ex_join_rules):
             join_rule = ex_join_rules[db_key]
             remote_entity_cls = join_rule["remote_entity_cls"]

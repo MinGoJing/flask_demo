@@ -20,7 +20,7 @@ from ..dao import session_parameter_processor
 from ..dao import session_parameter_value_processor
 
 
-def session_subfeatures_add(ss_id, params):
+def session_init(ss_id, params):
     #
     ss_inputs = params.get("session_inputs")
     ss_parameters = params.get("session_parameters")
@@ -55,3 +55,8 @@ def session_subfeatures_add(ss_id, params):
             pv_rcd = session_parameter_value_processor.add_many(pv_procs)
 
     return len(input_procs), len(parameter_procs)
+
+
+def session_process():
+    # TODO: Add process code here
+    pass

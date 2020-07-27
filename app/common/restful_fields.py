@@ -173,6 +173,12 @@ int_record_fields = {
     "data": fields.Integer,
 }
 
+str_record_fields = {
+    "code": fields.Integer,
+    "msg": fields.String(default="ok"),
+    "data": fields.String,
+}
+
 
 raw_record_fields = {
     "code": fields.Integer,

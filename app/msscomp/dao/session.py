@@ -45,10 +45,18 @@ class session_processor(base_db_update_model):
     #                                       # rules here. Check if we have implemented this while
     #                                       # doing gen_query().
     #   }
-    _ex_join_rules_from_db_key = {}
+    _ex_join_rules_from_db_key = {
+        "msss_session_inputs": {
+            "type": "join",
+            "remote_entity_cls": MsssSession,
+            "remote_db_key": "id",
+            "other_rules": []
+        }
+    }
     _unique_user_key_list = ["instance_id"]
     _key_2_db_attr_map = {
         "session_inputs": "msss_session_inputs",
         "session_outputs": "msss_session_outputs",
         "session_parameters": "msss_session_parameters"
     }
+    _entity_relation_backref_db_attr_list = []

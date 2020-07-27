@@ -14,3 +14,14 @@
 '''
 
 # py
+
+
+# common
+from app.common.exception import APIException
+
+# local
+from .code import RET
+
+
+class MsssAPIException(APIException):
+    _ret_cls = RET

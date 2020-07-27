@@ -15,8 +15,7 @@
 
 # py
 
-# api error
-from .api.error import errors
+
 # api resource
 from .api.resource.pub_dict import pub_dict
 from .api.resource.pub_dict import pub_dict_s
@@ -25,9 +24,6 @@ from .api.resource.utility import utility_s
 
 
 def init_module(api):
-    # merge exceptions
-    api.errors.update(errors)
-
     # add resource
     api.add_resource(pub_dict, "/dict/<dict_id>", endpoint="dict")
     api.add_resource(pub_dict_s, "/dicts", endpoint="dicts")

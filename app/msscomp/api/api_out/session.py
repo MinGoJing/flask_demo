@@ -20,6 +20,8 @@
 from flask_restful import fields
 
 # local
+from .session_input import session_input_record_field
+from .session_output import session_output_record_field
 from .session_parameter import session_parameter_record_field
 
 # export
@@ -40,6 +42,8 @@ session_record_field = {
     'end_time': fields.DateTime(dt_format='iso8601'),
     'status': fields.Integer,
     'note': fields.String,
+    'session_inputs': fields.List(fields.Nested(session_input_record_field)),
+    'session_outputs': fields.List(fields.Nested(session_output_record_field)),
     'session_parameters': fields.List(fields.Nested(session_parameter_record_field))
 }
 

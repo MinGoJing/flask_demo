@@ -31,14 +31,14 @@ from app.common.restful_fields import render_data
 from app.common.restful_fields import int_record_fields
 
 # parser
-from ..api_in import session_output_value_add_par
-from ..api_in import session_output_value_get_par
-from ..api_in import session_output_value_put_par
-from ..api_in import session_output_value_dd_par
+from .api_in import session_output_value_add_par
+from .api_in import session_output_value_get_par
+from .api_in import session_output_value_put_par
+from .api_in import session_output_value_dd_par
 
 # fields
-from ..api_out import session_output_value_record_fields
-from ..api_out import session_output_value_records_fields
+from .api_out import session_output_value_record_fields
+from .api_out import session_output_value_records_fields
 
 # db processor
 from app.msscomp.dao import session_output_value_processor
