@@ -16,5 +16,21 @@
 # py
 
 
-# export
-__all__ = []
+# common
+from app.common.exception import APIException
+
+# local
+from .code import RET
+
+
+class MsswAPIException(APIException):
+    _ret_cls = RET
+
+
+class MsswUnexceptedException(MsswAPIException):
+    """
+    @data : 
+        @ : entity name
+    """
+    code = RET.E_
+    msg = ('')

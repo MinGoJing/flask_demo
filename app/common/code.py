@@ -118,6 +118,8 @@ class RET(object):
         (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x500, 0x02))
     E_ENTITY_AUTO_JOIN_FAILED = \
         (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x500, 0x03))
+    E_ENTITY_BACKREF_NOT_FOUND_ERROR = \
+        (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x500, 0x04))
 
     E_ENTITY_UPDATE_UNIQUE_ERROR = \
         (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x400, 0x01))
@@ -180,6 +182,9 @@ class RET(object):
         E_ENTITY_AUTO_JOIN_FAILED: {
             "en": "E_ENTITY_AUTO_JOIN_FAILED",
             "zh-cn": "ORM 自动生成JOIN规则失败"},
+        E_ENTITY_BACKREF_NOT_FOUND_ERROR: {
+            "en": "E_ENTITY_BACKREF_NOT_FOUND_ERROR",
+            "zh-cn": "ORM 数据表backref映射丢失"},
         E_ENTITY_UPDATE_UNIQUE_ERROR: {
             "en": "E_ENTITY_UPDATE_UNIQUE_ERROR",
             "zh-cn": "数据库表对象更新唯一性校验失败"},

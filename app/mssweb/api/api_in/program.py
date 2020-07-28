@@ -36,25 +36,38 @@ __all__ = [
 # program
 # add
 program_add_par = RequestParser()
-program_add_par.add_argument('name',
+program_add_par.add_argument('utility_id',
+                             type=int, required=True,
+                             help='Utility ID. (Required)')
+program_add_par.add_argument('version',
                              type=str, required=True,
-                             help='. (Required)')
+                             help='version str like "0.0.1". (Required)')
+program_add_par.add_argument('provider_employee_id',
+                             type=int,
+                             nullable=True,
+                             help='provider employee ID.')
+program_add_par.add_argument('description',
+                             type=str,
+                             help='description.')
+
+
 # put
 program_put_par = program_add_par.copy()
-program_put_par.add_argument('id',
-                             type=int, required=True,
-                             help='ID. (Required)')
-program_put_par.replace_argument('name',
+program_put_par.replace_argument('utility_id',
+                                 type=int,
+                                 help='Utility ID.')
+program_put_par.replace_argument('provider_employee_id',
+                                 type=int,
+                                 store_missing=False,
+                                 help='provider employee ID.')
+program_put_par.replace_argument('version',
                                  type=str,
-                                 help='.')
+                                 help='version str like "0.0.1".')
 # get
 program_get_par = CommonFilterParser()  # page_*, ids, disabled
-program_get_par.add_argument('id',
-                             type=int,
-                             help='ID = ?')
 program_get_par.add_argument('name',
                              type=str,
-                             help='. = ?')
+                             help='Name = ?')
 
 # delete & disable
 program_dd_par = CommonDisableParser()  # id, ids, desc

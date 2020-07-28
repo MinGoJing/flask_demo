@@ -177,3 +177,12 @@ class EntityUpdateUniqueKeyExistsException(APIException):
     """
     code = RET.E_ENTITY_UPDATE_UNIQUE_ERROR
     msg = ("Entity <{}> object add/update <{}> unique check error.")
+
+
+class EntityBackrefAttributeNotFoundException(APIException):
+    """
+    @data : str
+        @str : entity backref attribute
+    """
+    code = RET.E_ENTITY_BACKREF_NOT_FOUND_ERROR
+    msg = ('entity <{}> backref attribute <{}> NOT found.')

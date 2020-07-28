@@ -17,10 +17,12 @@
 
 
 # api resource
-from .api.resource.pub_dict import pub_dict
-from .api.resource.pub_dict import pub_dict_s
-from .api.resource.utility import utility
-from .api.resource.utility import utility_s
+from .api.program import program_s
+from .api.program import program
+from .api.pub_dict import pub_dict
+from .api.pub_dict import pub_dict_s
+from .api.utility import utility
+from .api.utility import utility_s
 
 
 def init_module(api):
@@ -29,3 +31,5 @@ def init_module(api):
     api.add_resource(pub_dict_s, "/dicts", endpoint="dicts")
     api.add_resource(utility, "/utility/<utility_id>", endpoint="utility")
     api.add_resource(utility_s, "/utilitys", endpoint="utilitys")
+    api.add_resource(program, '/program/<program_id>', endpoint='program')
+    api.add_resource(program_s, '/programs', endpoint='programs')

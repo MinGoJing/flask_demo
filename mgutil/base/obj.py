@@ -311,6 +311,16 @@ class mgt_c_object(object):
         table_name = entity_instance.__class__.__tablename__
         return cls._table_2_db_attr2key_map.get(table_name, {})
 
+    def attr_update(self, input_obj, b_reserve=False):
+
+        # set value
+        if (isinstance(input_obj, dict)):
+            self._local_json_init(input_obj, b_reserve)
+        elif (is_db_entity(input_obj)):
+            self._local_model_init(input_obj, b_reserve)
+        elif (isinstance(input_obj, FlaskForm)):
+            self._local_form_init(input_obj, b_reserve)
+
     def sub_feature_fetch(self, key_root=""):
         if (not key_root):
             return self

@@ -17,12 +17,10 @@
 
 
 # api resource
-from .api.resource.session import session
-from .api.resource.session import session_s
-from .api.resource.session_output import session_output
-from .api.resource.session_output import session_output_s
-from .api.resource.session_output_value import session_output_value
-from .api.resource.session_output_value import session_output_value_s
+from .api.session import session
+from .api.session import session_s
+from .api.session_output import session_output
+from .api.session_output import session_output_s
 
 
 def init_module(api):
@@ -33,7 +31,3 @@ def init_module(api):
         session_output, '/session_output/<session_output_id>', endpoint='session_output')
     api.add_resource(session_output_s, '/session_outputs',
                      endpoint='session_outputs')
-    api.add_resource(session_output_value,
-                     '/session_output_value/<session_output_value_id>', endpoint='session_output_value')
-    api.add_resource(session_output_value_s,
-                     '/session_output_values', endpoint='session_output_values')

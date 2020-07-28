@@ -45,10 +45,12 @@ class CommonFilterParser(PageFilterParser):
     def __init__(self):
         PageFilterParser.__init__(self)
         self.add_argument("ids",
-                          type=IntCombinedInStrField, location=["args"],
+                          type=IntCombinedInStrField,
+                          location=["args", "form"],
                           help=("A String, which is ID(int) combined by ','."))
         self.add_argument("disabled",
-                          choices=[0, 1], location=["args", "form"],
+                          choices=[0, 1],
+                          location=["args", "form"],
                           help=("disabled status, value choice. "
                                 "1: disabled; 0: enabled;"))
 
@@ -58,11 +60,14 @@ class CommonDisableParser(RequestParser):
     def __init__(self):
         RequestParser.__init__(self)
         self.add_argument("id",
-                          type=int, location=["args"],
+                          type=int,
+                          location=["args", "form"],
                           help="ID")
         self.add_argument("ids",
-                          type=IntCombinedInStrField, location=["args"],
+                          type=IntCombinedInStrField,
+                          location=["args", "form"],
                           help="IDs combined with ','")
         self.add_argument("desc",
-                          type=str, location=["args", "form"],
+                          type=str,
+                          location=["args", "form"],
                           help="Disable or delete reason.")

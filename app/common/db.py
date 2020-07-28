@@ -42,6 +42,7 @@ from .exception import QueryMapFormatException
 from .exception import QueryJoinRuleLengthNotSupportException
 from .exception import EntityUpdateUniqueKeyExistsException
 from .exception import EntityAutoJoinFailedException
+from .exception import EntityBackrefAttributeNotFoundException
 
 # log
 import logging
@@ -182,8 +183,7 @@ class base_db_processor(mgt_c_object):
                 unique_identifier = unique_identifier[2:]
                 raise EntityUpdateUniqueKeyExistsException(
                     (self._entity_cls.__tablename__, unique_identifier))
-        etty_obj = self.to_model(
-            self._entity_cls, attr_map=self._key_2_db_attr_map)
+        etty_obj = self.to_model(attr_map=self._key_2_db_attr_map)
         session.add(etty_obj)
         if (do_flush):
             session.flush()
@@ -424,44 +424,64 @@ class base_db_processor(mgt_c_object):
 
         return query, None, None
 
+    @classmethod
     @transaction(session=db.session)
-    def update(self, session=db.session, unique_keys=[]):
+    def update(cls, entity_id, update_dict, session=db.session, unique_keys=[]):
         if (not unique_keys):
-            unique_keys = self._unique_user_key_list
+            unique_keys = cls._unique_user_key_list
         if (unique_keys):
-            fetch_params = {"id": {"op": "ne", "value": self.id}}
+            fetch_params = {"id": {"op": "ne", "value": entity_id}}
             for key in unique_keys:
-                fetch_params[key] = self.__dict__.get(key)
-            fetch_obj = self.__class__.fetch(fetch_params, session=session)
+                fetch_params[key] = update_dict.get[key]
+            fetch_obj = cls.fetch(fetch_params, session=session)
             if (fetch_obj):
                 unique_identifier = ""
                 for i in range(0, len(unique_keys)):
                     unique_identifier = "%s, %s:%s" % (
-                        unique_identifier, unique_keys[i], self.__dict__.get(unique_keys[i]))
+                        unique_identifier, unique_keys[i], update_dict.get(unique_keys[i]))
                 unique_identifier = unique_identifier[2:]
-                msg = "Entity <{}> obj update unique <{}> check failed.".format(self.entity_cls.__tablename__,
+                msg = "Entity <{}> obj update unique <{}> check failed.".format(cls.tablename(),
                                                                                 unique_identifier)
                 log.error(msg)
-                raise EntityUpdateUniqueKeyExistsException(data=[self.entity_cls.__tablename__,
-                                                                 unique_identifier])
+                raise EntityUpdateUniqueKeyExistsException(data=(cls.tablename(),
+                                                                 unique_identifier))
 
-        etty_obj = self.to_model()
-        session.merge(etty_obj)
-        return etty_obj.id
+        entity_obj = cls.fetch(entity_id, to_user_obj=False)
+        cls._update_entity_attrs(entity_obj, update_dict)
+        session.merge(entity_obj)
+        return entity_obj.id
 
+    @classmethod
+    def _update_entity_attrs(cls, entity_obj, update_dict):
+        key2db_attr_map = cls._key_2_db_attr_map
+
+        #
+        for key, value in update_dict.items():
+            db_attr = key2db_attr_map.get(key, key)
+            try:
+                setattr(entity_obj, db_attr, value)
+            except AttributeError as e:
+                # TODO: jmj,
+                raise (e)
+            except Exception as e:
+                raise (e)
+
+        return
+
+    @classmethod
     @transaction(session=db.session)
-    def delete(self, session=db.session):
-        id = getattr(self, "id", 0)
-        session.delete(self.to_model())
-        return id
+    def delete(cls, entity_id, session=db.session):
+        entity_obj = cls.fetch(entity_id, to_user_obj=False)
+        session.delete(entity_obj)
+        return entity_id
 
     @classmethod
     @transaction(session=db.session)
     def delete_many(cls, entity_obj_list, session=db.session):
         del_ids = []
         for obj in entity_obj_list:
-            session.delete(obj)
             del_ids.append(getattr(obj, "id", 0))
+            session.delete(obj)
 
         return del_ids
 
@@ -490,27 +510,6 @@ def parse_attr_s(entity_cls, key2attr_map, key):
         attr = attr_s
 
     return attr, attr_s, db_key, db_key_s
-
-
-class base_db_update_model(base_db_processor):
-
-    def add(self, session=db.session, unique_keys=[], do_flush=False):
-        self.operator_id = None
-        self.operate_time = datetime.now()
-        return super().add(session, unique_keys, do_flush=do_flush)
-
-    @classmethod
-    def add_many(cls, base_model_obj_list, unique_keys=[], session=db.session, do_flush=False):
-        now = datetime.now()
-        for obj in base_model_obj_list:
-            obj.operator_id = None
-            obj.operate_time = now
-        return super().add_many(base_model_obj_list, unique_keys, session=session, do_flush=do_flush)
-
-    def update(self, session=db.session, unique_keys=[]):
-        self.operator_id = None
-        self.operate_time = datetime.now()
-        return super().update(session, unique_keys)
 
 
 def init_db_processors(processor_dir_path, module_name):
@@ -697,7 +696,8 @@ def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key):
             if (hasattr(entity_cls, db_key)):
                 local_attr = getattr(entity_cls, db_key)
             else:
-                raise Exception()
+                raise EntityBackrefAttributeNotFoundException(
+                    (entity_cls.tablename(), db_key))
             remote_db_key = join_rule["remote_db_key"]
             if (hasattr(remote_entity_cls, remote_db_key)):
                 remote_attr = getattr(remote_entity_cls, remote_db_key)
@@ -742,3 +742,25 @@ def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key):
         raise Exception()
 
     return remote_entity_cls, jointype, relation_pairs
+
+
+class base_db_update_model(base_db_processor):
+
+    def add(self, session=db.session, unique_keys=[], do_flush=False):
+        self.operator_id = None
+        self.operate_time = datetime.now()
+        return super().add(session, unique_keys=unique_keys, do_flush=do_flush)
+
+    @classmethod
+    def add_many(cls, base_model_obj_list, unique_keys=[], session=db.session, do_flush=False):
+        now = datetime.now()
+        for obj in base_model_obj_list:
+            obj.operator_id = None
+            obj.operate_time = now
+        return super().add_many(base_model_obj_list, unique_keys, session=session, do_flush=do_flush)
+
+    @classmethod
+    def update(cls, model_id, up_params: dict, session=db.session, unique_keys=[]):
+        up_params["operator_id"] = None
+        up_params["operate_time"] = datetime.now()
+        return super().update(model_id, up_params, session=session, unique_keys=unique_keys)

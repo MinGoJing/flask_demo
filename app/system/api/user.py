@@ -15,7 +15,6 @@
 
 # py
 
-
 # config
 from app import conf
 
@@ -31,7 +30,8 @@ from app.common.http_auth import token_auth
 
 # export
 __all__ = [
-    "user"
+    "user",
+    "user_s"
 ]
 
 # log
@@ -43,6 +43,12 @@ class user(Resource):
 
     def user_get(self, user_name):
         return "{}'s main page.".format(user_name)
+
+
+class user_s(Resource):
+
+    def post(self, ):
+        return ""
 
 
 @token_auth.verify_token
@@ -60,6 +66,7 @@ def verify_token(token):
 
     if token in tokens:
         return True
+
     return False
 
 

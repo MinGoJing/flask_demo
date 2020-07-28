@@ -20,10 +20,12 @@
 from flask_restful import Api
 
 
-# api
-from .api.resource import *
+# api resource
+from .api.user import user
+from .api.user import user_s
 
 
 def init_module(api):
     # add resource
-    pass
+    api.add_resource(user, '/user/<user_id>', endpoint='user')
+    api.add_resource(user_s, '/users', endpoint='users')
