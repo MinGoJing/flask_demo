@@ -447,6 +447,8 @@ class base_db_processor(mgt_c_object):
                                                                  unique_identifier))
 
         entity_obj = cls.fetch(entity_id, to_user_obj=False)
+        if (not entity_obj):
+            raise UpdateEntityNotFoundException((cls.tablename(), entity_id))
         cls._update_entity_attrs(entity_obj, update_dict)
         session.merge(entity_obj)
         return entity_obj.id

@@ -84,10 +84,7 @@ class program(Resource):
     @marshal_with(int_record_fields)
     @transaction(session=sss)
     def delete(self, program_id, session=sss):
-        rcd = program_processor.delete(program_id)
-        if (not rcd):
-            raise Exception()
-            return render_data(rcd)
+        program_processor.delete(program_id)
         return render_data(program_id)
 
 

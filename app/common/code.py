@@ -123,6 +123,11 @@ class RET(object):
 
     E_ENTITY_UPDATE_UNIQUE_ERROR = \
         (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x400, 0x01))
+    E_UPDATE_ENTITY_NOT_FOUND_ERROR = \
+        (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x400, 0x02))
+
+    S_DELETE_ENTITY_NOT_FOUND = \
+        (SUCCESS_CODE(PLF_LAYER, MODULE_ORM, 0x200, 0x01))
 
     ##=========================================================##
     # API - request
@@ -188,6 +193,13 @@ class RET(object):
         E_ENTITY_UPDATE_UNIQUE_ERROR: {
             "en": "E_ENTITY_UPDATE_UNIQUE_ERROR",
             "zh-cn": "数据库表对象更新唯一性校验失败"},
+        E_UPDATE_ENTITY_NOT_FOUND_ERROR: {
+            "en": "E_UPDATE_ENTITY_NOT_FOUND_ERROR",
+            "zh-cn": "对象更新失败，ID无效"},
+
+        S_DELETE_ENTITY_NOT_FOUND: {
+            "en": "S_DELETE_ENTITY_NOT_FOUND",
+            "zh-cn": "对象删除未完成，ID无效"},
 
         # API REQ
         #
