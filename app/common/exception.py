@@ -181,8 +181,29 @@ class EntityUpdateUniqueKeyExistsException(APIException):
 
 class EntityBackrefAttributeNotFoundException(APIException):
     """
-    @data : str
+    @data : (str, str)
+        @str : entity_tale_name
         @str : entity backref attribute
     """
     code = RET.E_ENTITY_BACKREF_NOT_FOUND_ERROR
     msg = ('entity <{}> backref attribute <{}> NOT found.')
+
+
+class UpdateEntityNotFoundException(APIException):
+    """
+    @data : (str, int)
+        @str : entity_tale_name
+        @int : entity_id
+    """
+    code = RET.E_UPDATE_ENTITY_NOT_FOUND
+    msg = ('Entity <{} id:{}> NOT FOUND, update failed.')
+
+
+class DeleteEntityNotFoundException(APIException):
+    """
+    @data : (str, int)
+        @str : entity_tale_name
+        @int : entity_id
+    """
+    code = RET.S_DELETE_ENTITY_NOT_FOUND
+    msg = ('Entity <{} id:{}> NOT FOUND, delete failed.')

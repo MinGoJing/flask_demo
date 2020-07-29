@@ -43,6 +43,7 @@ from .exception import QueryJoinRuleLengthNotSupportException
 from .exception import EntityUpdateUniqueKeyExistsException
 from .exception import EntityAutoJoinFailedException
 from .exception import EntityBackrefAttributeNotFoundException
+from .exception import UpdateEntityNotFoundException
 
 # log
 import logging
@@ -706,7 +707,7 @@ def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key):
             else:
                 raise Exception()
             remote_table_key = "%s.%s" % (
-                remote_entity_cls.__table__name, remote_db_key)
+                remote_entity_cls.__tablename__, remote_db_key)
 
             relation_pairs.append(
                 [local_table_key, local_attr, remote_table_key, remote_attr])
