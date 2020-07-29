@@ -9,12 +9,76 @@ Base = declarative_base()
 metadata = Base.metadata
 
 
+class Company(Base):
+    __tablename__ = 'company'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64), nullable=False, unique=True)
+    number = Column(String(45), nullable=False, unique=True)
+    note = Column(String(200))
+    disabled = Column(Integer, nullable=False, server_default=FetchedValue())
+    operator_id = Column(Integer)
+    operate_time = Column(DateTime, nullable=False,
+                          server_default=FetchedValue())
+
+
+class Department(Base):
+    __tablename__ = 'department'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64), nullable=False, unique=True)
+    number = Column(String(45), nullable=False, unique=True)
+    note = Column(String(200))
+    fk_company_id = Column(ForeignKey('company.id'), index=True)
+    disabled = Column(Integer, nullable=False, server_default=FetchedValue())
+    operator_id = Column(String(45))
+    operate_time = Column(DateTime, nullable=False,
+                          server_default=FetchedValue())
+
+    fk_company = relationship(
+        'Company', primaryjoin='Department.fk_company_id == Company.id', backref='departments')
+
+
+class Employee(Base):
+    __tablename__ = 'employee'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64), nullable=False, unique=True)
+    number = Column(String(45), nullable=False, unique=True)
+    note = Column(String(200))
+    fk_department_id = Column(ForeignKey('department.id'), index=True)
+    disabled = Column(Integer, nullable=False, server_default=FetchedValue())
+    operator_id = Column(Integer)
+    operate_time = Column(DateTime, nullable=False,
+                          server_default=FetchedValue())
+
+    fk_department = relationship(
+        'Department', primaryjoin='Employee.fk_department_id == Department.id', backref='employees')
+
+
+class MsFileResource(Base):
+    __tablename__ = 'ms_file_resource'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(128), nullable=False)
+    host = Column(String(64))
+    path = Column(String(512), nullable=False)
+    disabled = Column(Integer, server_default=FetchedValue())
+    operator_id = Column(ForeignKey('user.id'), index=True)
+    operate_time = Column(DateTime, nullable=False,
+                          server_default=FetchedValue())
+    note = Column(String(200))
+
+    operator = relationship(
+        'User', primaryjoin='MsFileResource.operator_id == User.id', backref='ms_file_resources')
+
+
 class MsssSession(Base):
     __tablename__ = 'msss_session'
 
     id = Column(Integer, primary_key=True)
     instance_id = Column(String(45), nullable=False, unique=True)
-    name = Column(String(45))
+    name = Column(String(64))
     init_time = Column(DateTime, nullable=False, server_default=FetchedValue())
     start_time = Column(DateTime)
     end_time = Column(DateTime)
@@ -25,24 +89,6 @@ class MsssSession(Base):
 
 class MsssSessionInput(Base):
     __tablename__ = 'msss_session_input'
-    __table_args__ = (
-        Index('index', 'index', 'fk_session_id'),
-    )
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(64))
-    index = Column(Integer, nullable=False, server_default=FetchedValue())
-    fk_session_id = Column(ForeignKey('msss_session.id'),
-                           nullable=False, index=True)
-    note = Column(String(200))
-
-    fk_session = relationship(
-        # , backref='msss_session_inputs')
-        'MsssSession', primaryjoin='MsssSessionInput.fk_session_id == MsssSession.id')
-
-
-class MsssSessionInputValue(Base):
-    __tablename__ = 'msss_session_input_value'
 
     id = Column(Integer, primary_key=True)
     fk_session_input_id = Column(ForeignKey(
@@ -54,29 +100,12 @@ class MsssSessionInputValue(Base):
     v2 = Column(String(64))
     v3 = Column(String(512), info='Put json config/list here.')
 
-    fk_session_input = relationship(
-        'MsssSessionInput', primaryjoin='MsssSessionInputValue.fk_session_input_id == MsssSessionInput.id', backref='msss_session_input_values')
+    fk_session_input = relationship('MsssSessionInput', remote_side=[
+                                    id], primaryjoin='MsssSessionInput.fk_session_input_id == MsssSessionInput.id', backref='msss_session_inputs')
 
 
 class MsssSessionOutput(Base):
     __tablename__ = 'msss_session_output'
-    __table_args__ = (
-        Index('index', 'index', 'fk_session_id'),
-    )
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(64))
-    index = Column(Integer, nullable=False, server_default=FetchedValue())
-    fk_session_id = Column(ForeignKey('msss_session.id'),
-                           nullable=False, index=True)
-    note = Column(String(200))
-
-    fk_session = relationship(
-        'MsssSession', primaryjoin='MsssSessionOutput.fk_session_id == MsssSession.id', backref='msss_session_outputs')
-
-
-class MsssSessionOutputValue(Base):
-    __tablename__ = 'msss_session_output_value'
 
     id = Column(Integer, primary_key=True)
     fk_session_output_id = Column(ForeignKey(
@@ -88,42 +117,8 @@ class MsssSessionOutputValue(Base):
     v2 = Column(String(64))
     v3 = Column(String(512), info='Put json config/list here.')
 
-    fk_session_output = relationship(
-        'MsssSessionOutput', primaryjoin='MsssSessionOutputValue.fk_session_output_id == MsssSessionOutput.id', backref='msss_session_output_values')
-
-
-class MsssSessionParameter(Base):
-    __tablename__ = 'msss_session_parameter'
-    __table_args__ = (
-        Index('index', 'index', 'fk_session_id'),
-    )
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(64))
-    index = Column(Integer, nullable=False, server_default=FetchedValue())
-    fk_session_id = Column(ForeignKey('msss_session.id'),
-                           nullable=False, index=True)
-    note = Column(String(200))
-
-    fk_session = relationship(
-        'MsssSession', primaryjoin='MsssSessionParameter.fk_session_id == MsssSession.id', backref='msss_session_parameters')
-
-
-class MsssSessionParameterValue(Base):
-    __tablename__ = 'msss_session_parameter_value'
-
-    id = Column(Integer, primary_key=True)
-    fk_session_parameter_id = Column(ForeignKey(
-        'msss_session_parameter.id'), nullable=False, index=True)
-    key = Column(String(64), nullable=False)
-    index = Column(Integer, nullable=False)
-    data_type = Column(Integer, nullable=False)
-    v1 = Column(String(64))
-    v2 = Column(String(64))
-    v3 = Column(String(512), info='Put json config/list here.')
-
-    fk_session_parameter = relationship(
-        'MsssSessionParameter', primaryjoin='MsssSessionParameterValue.fk_session_parameter_id == MsssSessionParameter.id', backref='msss_session_parameter_values')
+    fk_session_output = relationship('MsssSessionOutput', remote_side=[
+                                     id], primaryjoin='MsssSessionOutput.fk_session_output_id == MsssSessionOutput.id', backref='msss_session_outputs')
 
 
 class MsswFileResource(Base):
@@ -132,15 +127,15 @@ class MsswFileResource(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(128), nullable=False)
     host = Column(String(64))
-    fulll_path = Column(String(512), nullable=False)
+    path = Column(String(512), nullable=False)
     disabled = Column(Integer, server_default=FetchedValue())
-    operator_id = Column(ForeignKey('sys_user.id'), index=True)
+    operator_id = Column(ForeignKey('user.id'), index=True)
     operate_time = Column(DateTime, nullable=False,
                           server_default=FetchedValue())
     note = Column(String(200))
 
     operator = relationship(
-        'SysUser', primaryjoin='MsswFileResource.operator_id == SysUser.id', backref='mssw_file_resources')
+        'User', primaryjoin='MsswFileResource.operator_id == User.id', backref='mssw_file_resources')
 
 
 class MsswProces(Base):
@@ -164,116 +159,40 @@ class MsswProces(Base):
         'MsswProgram', primaryjoin='MsswProces.fk_program_id == MsswProgram.id', backref='mssw_process')
 
 
-class MsswProcessModelInput(Base):
-    __tablename__ = 'mssw_process_model_input'
+class MsswProcessInput(Base):
+    __tablename__ = 'mssw_process_input'
+    __table_args__ = (
+        Index('index', 'fk_process_id', 'index'),
+    )
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(64))
-    index = Column(Integer, nullable=False, unique=True,
-                   server_default=FetchedValue())
-    fk_process_id = Column(Integer, nullable=False, unique=True)
-    note = Column(String(200))
-
-
-class MsswProcessModelInputValue(Base):
-    __tablename__ = 'mssw_process_model_input_value'
-
-    id = Column(Integer, primary_key=True)
-    fk_process_model_input_id = Column(ForeignKey(
-        'mssw_process_model_input.id'), nullable=False, index=True)
+    fk_process_id = Column(ForeignKey('mssw_process.id'), nullable=False)
+    module_name = Column(String(64))
     key = Column(String(64), nullable=False)
     index = Column(Integer, nullable=False)
     data_type = Column(Integer, nullable=False)
-    v1 = Column(String(64))
-    v2 = Column(String(64))
-    v3 = Column(String(512), info='Put json config/list here.')
+    value = Column(String(1024), info='Put json config/list here.')
 
-    fk_process_model_input = relationship(
-        'MsswProcessModelInput', primaryjoin='MsswProcessModelInputValue.fk_process_model_input_id == MsswProcessModelInput.id', backref='mssw_process_model_input_values')
+    fk_process = relationship(
+        'MsswProces', primaryjoin='MsswProcessInput.fk_process_id == MsswProces.id', backref='mssw_process_inputs')
 
 
-class MsswProcessModelLog(Base):
-    __tablename__ = 'mssw_process_model_log'
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(64))
-    index = Column(Integer, nullable=False, unique=True,
-                   server_default=FetchedValue())
-    fk_process_id = Column(Integer, nullable=False, unique=True)
-    note = Column(String(200))
-
-
-class MsswProcessModelLogValue(Base):
-    __tablename__ = 'mssw_process_model_log_value'
+class MsswProcessOutput(Base):
+    __tablename__ = 'mssw_process_output'
+    __table_args__ = (
+        Index('po_index', 'fk_process_id', 'index'),
+    )
 
     id = Column(Integer, primary_key=True)
-    fk_process_model_log_id = Column(ForeignKey(
-        'mssw_process_model_log.id'), nullable=False, index=True)
+    fk_process_id = Column(ForeignKey('mssw_process.id'),
+                           nullable=False, index=True)
     key = Column(String(64), nullable=False)
     index = Column(Integer, nullable=False)
     data_type = Column(Integer, nullable=False)
-    v1 = Column(String(64))
-    v2 = Column(String(64))
-    v3 = Column(String(512), info='Put json config/list here.')
+    value = Column(String(1024), info='Put json config/list here.')
 
-    fk_process_model_log = relationship(
-        'MsswProcessModelLog', primaryjoin='MsswProcessModelLogValue.fk_process_model_log_id == MsswProcessModelLog.id', backref='mssw_process_model_log_values')
-
-
-class MsswProcessModelOutput(Base):
-    __tablename__ = 'mssw_process_model_output'
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(64))
-    index = Column(Integer, nullable=False, unique=True,
-                   server_default=FetchedValue())
-    fk_process_id = Column(Integer, nullable=False, unique=True)
-    note = Column(String(200))
-
-
-class MsswProcessModelOutputValue(Base):
-    __tablename__ = 'mssw_process_model_output_value'
-
-    id = Column(Integer, primary_key=True)
-    fk_process_model_output_id = Column(ForeignKey(
-        'mssw_process_model_output.id'), nullable=False, index=True)
-    key = Column(String(64), nullable=False)
-    index = Column(Integer, nullable=False)
-    data_type = Column(Integer, nullable=False)
-    v1 = Column(String(64))
-    v2 = Column(String(64))
-    v3 = Column(String(512), info='Put json config/list here.')
-
-    fk_process_model_output = relationship(
-        'MsswProcessModelOutput', primaryjoin='MsswProcessModelOutputValue.fk_process_model_output_id == MsswProcessModelOutput.id', backref='mssw_process_model_output_values')
-
-
-class MsswProcessModelParameter(Base):
-    __tablename__ = 'mssw_process_model_parameter'
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(64))
-    index = Column(Integer, nullable=False, unique=True,
-                   server_default=FetchedValue())
-    fk_process_id = Column(Integer, nullable=False, unique=True)
-    note = Column(String(200))
-
-
-class MsswProcessModelParameterValue(Base):
-    __tablename__ = 'mssw_process_model_parameter_value'
-
-    id = Column(Integer, primary_key=True)
-    fk_process_model_parameter_id = Column(ForeignKey(
-        'mssw_process_model_parameter.id'), nullable=False, index=True)
-    key = Column(String(64), nullable=False)
-    index = Column(Integer, nullable=False)
-    data_type = Column(Integer, nullable=False)
-    v1 = Column(String(64))
-    v2 = Column(String(64))
-    v3 = Column(String(512), info='Put json config/list here.')
-
-    fk_process_model_parameter = relationship(
-        'MsswProcessModelParameter', primaryjoin='MsswProcessModelParameterValue.fk_process_model_parameter_id == MsswProcessModelParameter.id', backref='mssw_process_model_parameter_values')
+    fk_process = relationship(
+        'MsswProces', primaryjoin='MsswProcessOutput.fk_process_id == MsswProces.id', backref='mssw_process_outputs')
 
 
 class MsswProcessRecordAcces(Base):
@@ -284,10 +203,10 @@ class MsswProcessRecordAcces(Base):
                            nullable=False, index=True)
     fk_dict_record_type = Column(ForeignKey(
         'pub_dict.id'), nullable=False, index=True)
-    target_type = Column(Integer, nullable=False)
-    target_id = Column(Integer, nullable=False)
+    user_id = Column(Integer)
+    department_id = Column(Integer)
     disabled = Column(Integer, server_default=FetchedValue())
-    operator_id = Column(ForeignKey('sys_user.id'), index=True)
+    operator_id = Column(ForeignKey('user.id'), index=True)
     operate_time = Column(DateTime, server_default=FetchedValue())
 
     pub_dict = relationship(
@@ -295,7 +214,7 @@ class MsswProcessRecordAcces(Base):
     fk_process = relationship(
         'MsswProces', primaryjoin='MsswProcessRecordAcces.fk_process_id == MsswProces.id', backref='mssw_process_record_access')
     operator = relationship(
-        'SysUser', primaryjoin='MsswProcessRecordAcces.operator_id == SysUser.id', backref='mssw_process_record_access')
+        'User', primaryjoin='MsswProcessRecordAcces.operator_id == User.id', backref='mssw_process_record_access')
 
 
 class MsswProgram(Base):
@@ -305,20 +224,19 @@ class MsswProgram(Base):
     fk_utility_id = Column(ForeignKey('mssw_ultility.id'),
                            nullable=False, index=True)
     version = Column(String(45), nullable=False)
-    fk_provider_employee_id = Column(ForeignKey('sys_employee.id'), index=True)
+    fk_provider_employee_id = Column(ForeignKey('employee.id'), index=True)
     description = Column(String(200))
-    operator_id = Column(ForeignKey('sys_user.id'),
-                         index=True, info='User ID.')
+    operator_id = Column(ForeignKey('user.id'), index=True, info='User ID.')
     operate_time = Column(DateTime, nullable=False,
                           server_default=FetchedValue())
     disabled = Column(Integer, nullable=False, server_default=FetchedValue())
 
     fk_provider_employee = relationship(
-        'SysEmployee', primaryjoin='MsswProgram.fk_provider_employee_id == SysEmployee.id', backref='mssw_programs')
+        'Employee', primaryjoin='MsswProgram.fk_provider_employee_id == Employee.id', backref='mssw_programs')
     fk_utility = relationship(
         'MsswUltility', primaryjoin='MsswProgram.fk_utility_id == MsswUltility.id', backref='mssw_programs')
     operator = relationship(
-        'SysUser', primaryjoin='MsswProgram.operator_id == SysUser.id', backref='mssw_programs')
+        'User', primaryjoin='MsswProgram.operator_id == User.id', backref='mssw_programs')
 
 
 class MsswProgramActivation(Base):
@@ -331,7 +249,7 @@ class MsswProgramActivation(Base):
         'pub_dict.id'), nullable=False, index=True)
     is_active = Column(Integer, nullable=False, server_default=FetchedValue())
     note = Column(String(45))
-    operator_id = Column(ForeignKey('sys_user.id'), index=True)
+    operator_id = Column(ForeignKey('user.id'), index=True)
     operate_time = Column(DateTime, nullable=False,
                           server_default=FetchedValue())
 
@@ -340,7 +258,7 @@ class MsswProgramActivation(Base):
     fk_program = relationship(
         'MsswProgram', primaryjoin='MsswProgramActivation.fk_program_id == MsswProgram.id', backref='mssw_program_activations')
     operator = relationship(
-        'SysUser', primaryjoin='MsswProgramActivation.operator_id == SysUser.id', backref='mssw_program_activations')
+        'User', primaryjoin='MsswProgramActivation.operator_id == User.id', backref='mssw_program_activations')
 
 
 class MsswProgramConfig(Base):
@@ -350,43 +268,45 @@ class MsswProgramConfig(Base):
     name = Column(String(128), nullable=False)
     fk_program_id = Column(ForeignKey('mssw_program.id'),
                            nullable=False, index=True)
-    fk_dict_program_cfg_type = Column(ForeignKey(
-        'pub_dict.id'), nullable=False, index=True, info='1: json string\\n2: config file')
-    config_value = Column(String(
-        2048), info='Type 1: json string;\\nType 2: file path with host address;')
-    operator_id = Column(ForeignKey('sys_user.id'), index=True)
+    module_name = Column(String(64))
+    key = Column(String(64))
+    index = Column(Integer, nullable=False)
+    data_type = Column(Integer)
+    value = Column(String(
+        1024), info='Type 1: json string;\\nType 2: file path with host address;')
+    operator_id = Column(ForeignKey('user.id'), index=True)
     operate_time = Column(DateTime, nullable=False,
                           server_default=FetchedValue())
     disabled = Column(Integer, server_default=FetchedValue())
 
-    pub_dict = relationship(
-        'PubDict', primaryjoin='MsswProgramConfig.fk_dict_program_cfg_type == PubDict.id', backref='mssw_program_configs')
     fk_program = relationship(
         'MsswProgram', primaryjoin='MsswProgramConfig.fk_program_id == MsswProgram.id', backref='mssw_program_configs')
     operator = relationship(
-        'SysUser', primaryjoin='MsswProgramConfig.operator_id == SysUser.id', backref='mssw_program_configs')
+        'User', primaryjoin='MsswProgramConfig.operator_id == User.id', backref='mssw_program_configs')
 
 
 class MsswProgramConfigAcces(Base):
     __tablename__ = 'mssw_program_config_access'
 
     id = Column(Integer, primary_key=True)
-    fk_program_config_id = Column(ForeignKey('mssw_program_config.id'), ForeignKey(
+    fk_program_config_id = Column(ForeignKey(
         'mssw_program_config.id'), nullable=False, index=True)
-    target_type = Column(Integer, nullable=False,
-                         info='1: target_id => User ID\\n2: target_id => Department ID')
-    target_id = Column(Integer)
-    operator_id = Column(ForeignKey('sys_user.id'), index=True)
+    department_id = Column(ForeignKey('department.id'), nullable=False, index=True,
+                           info='1: target_id => User ID\\n2: target_id => Department ID')
+    user_id = Column(ForeignKey('user.id'), index=True)
+    operator_id = Column(ForeignKey('user.id'), index=True)
     operate_time = Column(DateTime, nullable=False,
                           server_default=FetchedValue())
     disabled = Column(Integer, server_default=FetchedValue())
 
-    fk_program_config = relationship('MsswProgramConfig', primaryjoin='MsswProgramConfigAcces.fk_program_config_id == MsswProgramConfig.id',
-                                     backref='msswprogramconfig_mssw_program_config_access')
-    fk_program_config1 = relationship('MsswProgramConfig', primaryjoin='MsswProgramConfigAcces.fk_program_config_id == MsswProgramConfig.id',
-                                      backref='msswprogramconfig_mssw_program_config_access_0')
-    operator = relationship(
-        'SysUser', primaryjoin='MsswProgramConfigAcces.operator_id == SysUser.id', backref='mssw_program_config_access')
+    department = relationship(
+        'Department', primaryjoin='MsswProgramConfigAcces.department_id == Department.id', backref='mssw_program_config_access')
+    fk_program_config = relationship(
+        'MsswProgramConfig', primaryjoin='MsswProgramConfigAcces.fk_program_config_id == MsswProgramConfig.id', backref='mssw_program_config_access')
+    operator = relationship('User', primaryjoin='MsswProgramConfigAcces.operator_id == User.id',
+                            backref='user_mssw_program_config_access')
+    user = relationship('User', primaryjoin='MsswProgramConfigAcces.user_id == User.id',
+                        backref='user_mssw_program_config_access_0')
 
 
 class MsswUltility(Base):
@@ -404,7 +324,7 @@ class MsswUltility(Base):
     fk_dict_utility_sub_group_id = Column(
         ForeignKey('pub_dict.id'), nullable=False, index=True)
     disabled = Column(Integer, nullable=False, server_default=FetchedValue())
-    operator_id = Column(ForeignKey('sys_user.id'), index=True)
+    operator_id = Column(ForeignKey('user.id'), index=True)
     operate_time = Column(DateTime, nullable=False,
                           server_default=FetchedValue())
     description = Column(String(200))
@@ -414,7 +334,7 @@ class MsswUltility(Base):
     fk_dict_utility_sub_group = relationship(
         'PubDict', primaryjoin='MsswUltility.fk_dict_utility_sub_group_id == PubDict.id', backref='pubdict_mssw_ultilities_0')
     operator = relationship(
-        'SysUser', primaryjoin='MsswUltility.operator_id == SysUser.id', backref='mssw_ultilities')
+        'User', primaryjoin='MsswUltility.operator_id == User.id', backref='mssw_ultilities')
 
 
 class PubDict(Base):
@@ -430,61 +350,17 @@ class PubDict(Base):
     note = Column(String(200))
 
 
-class SysCompany(Base):
-    __tablename__ = 'sys_company'
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(64), nullable=False, unique=True)
-    note = Column(String(200))
-    disabled = Column(Integer, nullable=False, server_default=FetchedValue())
-    operator_id = Column(Integer)
-    operate_time = Column(DateTime, nullable=False,
-                          server_default=FetchedValue())
-
-
-class SysDepartment(Base):
-    __tablename__ = 'sys_department'
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(64), nullable=False, unique=True)
-    note = Column(String(200))
-    fk_sys_company_id = Column(ForeignKey('sys_company.id'), index=True)
-    disabled = Column(Integer, nullable=False, server_default=FetchedValue())
-    operator_id = Column(String(45))
-    operate_time = Column(DateTime, nullable=False,
-                          server_default=FetchedValue())
-
-    fk_sys_company = relationship(
-        'SysCompany', primaryjoin='SysDepartment.fk_sys_company_id == SysCompany.id', backref='sys_departments')
-
-
-class SysEmployee(Base):
-    __tablename__ = 'sys_employee'
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(64), nullable=False, unique=True)
-    note = Column(String(200))
-    fk_sys_department_id = Column(ForeignKey('sys_department.id'), index=True)
-    disabled = Column(Integer, nullable=False, server_default=FetchedValue())
-    operator_id = Column(Integer)
-    operate_time = Column(DateTime, nullable=False,
-                          server_default=FetchedValue())
-
-    fk_sys_department = relationship(
-        'SysDepartment', primaryjoin='SysEmployee.fk_sys_department_id == SysDepartment.id', backref='sys_employees')
-
-
-class SysUser(Base):
-    __tablename__ = 'sys_user'
+class User(Base):
+    __tablename__ = 'user'
 
     id = Column(Integer, primary_key=True)
     name = Column(String(64), nullable=False, unique=True)
     email = Column(String(64))
-    fk_sys_employee_id = Column(ForeignKey('sys_employee.id'), index=True)
+    fk_employee_id = Column(ForeignKey('employee.id'), index=True)
     disabled = Column(Integer, nullable=False, server_default=FetchedValue())
     operator_id = Column(Integer)
     operate_time = Column(DateTime, nullable=False,
                           server_default=FetchedValue())
 
-    fk_sys_employee = relationship(
-        'SysEmployee', primaryjoin='SysUser.fk_sys_employee_id == SysEmployee.id', backref='sys_users')
+    fk_employee = relationship(
+        'Employee', primaryjoin='User.fk_employee_id == Employee.id', backref='users')
