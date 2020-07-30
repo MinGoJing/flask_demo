@@ -56,13 +56,13 @@ program_put_par = program_add_par.copy()
 program_put_par.replace_argument('utility_id',
                                  type=int,
                                  help='Utility ID.')
+program_put_par.replace_argument('version',
+                                 type=str,
+                                 help='version str like "0.0.1".')
 program_put_par.replace_argument('provider_employee_id',
                                  type=int,
                                  store_missing=False,
                                  help='provider employee ID.')
-program_put_par.replace_argument('version',
-                                 type=str,
-                                 help='version str like "0.0.1".')
 # get
 program_get_par = CommonFilterParser()  # page_*, ids, disabled
 program_get_par.add_argument('name',
