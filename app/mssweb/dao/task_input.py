@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 '''
-@File    :   process.py
-@Desc    :   provide process db processors
+@File    :   task_input.py
+@Desc    :   provide task input processor
 @Version :   1.0
 @Author  :   MinGo
 @Contact :   mingo_jing@163.com
 @License :   (C)Copyright since 2020, MinGo
 @History :   
-    1.0: 2020/07/18 11:46, MinGo
+    1.0: 2020/07/31 06:24, MinGo
           1. Created.
 
 '''
@@ -20,24 +20,25 @@
 from app.common.db import base_db_update_model
 
 # model
-from app.models import MsswProces
+from app.models import MsswTaskInput
 
 # export
 __all__ = [
-    'process_processor',
-    'MsswProces'
+    'task_input_processor',
+    'MsswTaskInput'
 ]
 
 
 # keep class name starts with FILENAME_BASE, and connected with _processor
 #
-class process_processor(base_db_update_model):
-    _entity_cls = MsswProces
+class task_input_processor(base_db_update_model):
+    _entity_cls = MsswTaskInput
     _null_supported_filter_attrs = []
     # Use db unique settings as default.
     #   You can define it here if forgot this in db design.
     _unique_user_key_list = []
     _key_2_db_attr_map = {}
+    _default_value_map = {}
     # If NOT set, inner_join if foreign_key is NOT nullable else left_join
     # This is useful if there is NO foreign key settings in DB schema
     # @format:

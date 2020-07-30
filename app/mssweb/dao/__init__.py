@@ -23,6 +23,9 @@ from app import PROJ_HOME_PATH
 from .pub_dict import *
 from .utility import *
 from .program import *
+from .task import *
+from .task_input import *
+from .task_output import *
 
 g_init_done = False
 if (not g_init_done):

@@ -168,7 +168,7 @@ class base_db_processor(mgt_c_object):
             return cls._db_attr_2_key_map
 
     @transaction(session=db.session)
-    def add(self, session=db.session, unique_keys=[], do_flush=False):
+    def add(self, session=db.session, unique_keys=[], do_flush=True):
         if (not unique_keys):
             unique_keys = self._unique_user_key_list
         if (unique_keys):
@@ -749,7 +749,7 @@ def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key):
 
 class base_db_update_model(base_db_processor):
 
-    def add(self, session=db.session, unique_keys=[], do_flush=False):
+    def add(self, session=db.session, unique_keys=[], do_flush=True):
         self.operator_id = None
         self.operate_time = datetime.now()
         return super().add(session, unique_keys=unique_keys, do_flush=do_flush)

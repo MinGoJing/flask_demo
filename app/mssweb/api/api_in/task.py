@@ -38,31 +38,27 @@ __all__ = [
 task_add_par = RequestParser()
 task_add_par.add_argument('fk_program_id',
                           type=int, required=True,
-                          location=['form'],
+                          location=['form', 'json'],
                           help='program_id. (Required)')
 task_add_par.add_argument('processor_id',
                           type=int, required=True,
-                          location=['form'],
+                          location=['form', 'json'],
                           help='processor_id. (Required)')
 task_add_par.add_argument('task_inputs',
                           type=dict, required=True,  # field: <list:task_input>
-                          location=['form'],
+                          location=['form', 'json'],
                           help='task_inputstask inputs. (Required)')
 task_add_par.add_argument('note',
                           type=str,
-                          location=['form'],
+                          location=['form', 'json'],
                           help='note. (Required)')
 
 # put
 task_put_par = RequestParser()
 task_put_par.remove_argument("fk_program_id")
-task_put_par.add_argument('id',
-                          type=int, required=True,
-                          location=['args'],
-                          help='task ID. (Required)')
 task_put_par.add_argument('status',
                           type=str, required=True,
-                          location=['form'],
+                          location=['form', 'json'],
                           help='task status. (Required)')
 
 

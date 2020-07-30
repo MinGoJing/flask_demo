@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 '''
-@File    :   program.py
-@Desc    :   provide program processor
+@File    :   task_output.py
+@Desc    :   provide task_output processor
 @Version :   1.0
 @Author  :   MinGo
 @Contact :   mingo_jing@163.com
 @License :   (C)Copyright since 2020, MinGo
 @History :   
-    1.0: 2020/07/31 06:29, MinGo
+    1.0: 2020/07/31 06:25, MinGo
           1. Created.
 
 '''
@@ -20,19 +20,19 @@
 from app.common.db import base_db_update_model
 
 # model
-from app.models import MsswProgram
+from app.models import MsswTaskOutput
 
 # export
 __all__ = [
-    'program_processor',
-    'MsswProgram'
+    'task_output_processor',
+    'MsswTaskOutput'
 ]
 
 
 # keep class name starts with FILENAME_BASE, and connected with _processor
 #
-class program_processor(base_db_update_model):
-    _entity_cls = MsswProgram
+class task_output_processor(base_db_update_model):
+    _entity_cls = MsswTaskOutput
     _null_supported_filter_attrs = []
     # Use db unique settings as default.
     #   You can define it here if forgot this in db design.

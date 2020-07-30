@@ -17,6 +17,12 @@
 
 
 # api resource
+from .api.task_output import task_output_s
+from .api.task_output import task_output
+from .api.task_input import task_input_s
+from .api.task_input import task_input
+from .api.task import task_s
+from .api.task import task
 from .api.program import program_s
 from .api.program import program
 from .api.pub_dict import pub_dict
@@ -33,3 +39,11 @@ def init_module(api):
     api.add_resource(utility_s, "/utilitys", endpoint="utilitys")
     api.add_resource(program, '/program/<program_id>', endpoint='program')
     api.add_resource(program_s, '/programs', endpoint='programs')
+    api.add_resource(task, '/task/<task_id>', endpoint='task')
+    api.add_resource(task_s, '/tasks', endpoint='tasks')
+    api.add_resource(task_input, '/task_input/<task_input_id>',
+                     endpoint='task_input')
+    api.add_resource(task_input_s, '/task_inputs', endpoint='task_inputs')
+    api.add_resource(
+        task_output, '/task_output/<task_output_id>', endpoint='task_output')
+    api.add_resource(task_output_s, '/task_outputs', endpoint='task_outputs')
