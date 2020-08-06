@@ -25,9 +25,9 @@ from .api.session_output import session_output_s
 
 def init_module(api):
     # add resource
-    api.add_resource(session, '/session/<session_id>', endpoint='session')
+    api.add_resource(session, '/session/<instance_id>', endpoint='session')
     api.add_resource(session_s, '/sessions', endpoint='sessions')
     api.add_resource(
-        session_output, '/session_output/<session_output_id>', endpoint='session_output')
+        session_output, '/session_output/<session_output_key>', endpoint='session_output')
     api.add_resource(session_output_s, '/session_outputs',
                      endpoint='session_outputs')

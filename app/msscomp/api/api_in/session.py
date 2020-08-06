@@ -39,41 +39,24 @@ session_add_par = RequestParser()
 session_add_par.add_argument('name', required=True,
                              type=str,
                              help='program_name. (Required)')
-session_add_par.add_argument('note',
+session_add_par.add_argument('version', required=True,
                              type=str,
-                             help='note.')
+                             help='version string. (Required)')
 session_add_par.add_argument('session_inputs', required=True,
                              type=dict, action="append",
-                             help='session inputs.')
-session_add_par.add_argument('session_parameters',
-                             type=dict, action="append",
-                             help='session parameters.')
+                             help='session inputs (Required).')
 
 # put
-session_put_par = session_add_par.copy()
-session_put_par.add_argument('id',
-                             type=int, required=True,
-                             help='ID. (Required)')
-session_put_par.remove_argument('instance_id')
-session_put_par.remove_argument('init_time')
+session_put_par = RequestParser()
 # get
 session_get_par = CommonFilterParser()  # page, ids, disabled
-session_get_par.add_argument('id',
-                             type=int,
-                             help='ID = ?')
 session_get_par.add_argument('instance_id',
                              type=int,
                              help='Instance ID = ?')
-session_get_par.add_argument('input_name',
-                             type=str,
-                             help='session input name = ?')
 session_get_par.add_argument('status',
                              type=int,
                              help='Session status[0: Created 1: Started 2: Crashed 3: UserCanceled 4: Finished].')
 
 
 # delete & disable
-session_dd_par = CommonDisableParser()  # id, ids, @staticmethod
-session_dd_par.add_argument('instance_id',
-                            type=int,
-                            help='Instance ID = ?')
+session_dd_par = RequestParser()

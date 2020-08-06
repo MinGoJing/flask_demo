@@ -69,9 +69,10 @@ class session_output(Resource):
     # @token_auth.login_required  # token认证方式
     # @multi_auth.login_required  # 两种综合认证方式，满足其一即可
     @marshal_with(session_output_record_fields)
-    def get(self, session_output_id):
+    def get(self, session_output_key):
         #
-        obj = session_output_processor.fetch(session_output_id)
+        obj = session_output_processor.fetch(
+            {"key": session_output_key})
         return render_data(obj)
 
     @marshal_with(int_record_fields)
@@ -104,7 +105,7 @@ class session_output_s(Resource):
         return render_data(rcd)
 
     @marshal_with(session_output_records_fields)
-    def get(self, category=None, name=''):
+    def get(self):
         f_params = session_output_get_par.parse_args()
         rcds = session_output_processor.get(f_params)
         return render_data(rcds)

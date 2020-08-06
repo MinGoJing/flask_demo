@@ -17,28 +17,40 @@
 
 
 # common
-from app.common.db import base_db_processor
+from app.common.db import base_db_update_model
 
 # model
-from app.models import MsssSessionOutput
+from app.models import MsssOutput
 
 # export
 __all__ = [
     'session_output_processor',
-    'MsssSessionOutput'
+    'MsssOutput'
 ]
 
 
 # keep class name starts with FILENAME_BASE, and connected with _processor
 #
-class session_output_processor(base_db_processor):
-    _entity_cls = MsssSessionOutput
+class session_output_processor(base_db_update_model):
+    _entity_cls = MsssOutput
     _null_supported_filter_attrs = []
-    # If NOT set, inner_join if foreign_key is NOT nullable else left_join
-    # Otherwise, default to leftjoin
-    _ex_join_rules_from_db_key = {}
-    _unique_user_key_list = ["session_id", "index"]
+    # Use db unique settings as default.
+    #   You can define it here if forgot this in db design.
+    _unique_user_key_list = []
     _key_2_db_attr_map = {
-        "session_id": "fk_session_id",
-        "output_values": "msss_session_output_values"
+        "session_id": "fk_session_id"
     }
+    _default_value_map = {}
+    # If NOT set, inner_join if foreign_key is NOT nullable else left_join
+    # This is useful if there is NO foreign key settings in DB schema
+    # @format:
+    #   '$(db_foreign_key)': {
+    #       'type': 'outerjoin',            # choices = ['outerjoin', 'join']
+    #       'remote_entity_cls': PubDict,   # relation entity class, the auto generated ones
+    #       'remote_db_key': 'id',          # remote entity key to be joined
+    #       'other_rules': [(local_db_key, remote_db_key), ()]
+    #                                       # If the join rule is a bit more complex, add extra
+    #                                       # rules here. Check if we have implemented this while
+    #                                       # doing gen_query().
+    #   }
+    _ex_join_rules_from_db_key = {}

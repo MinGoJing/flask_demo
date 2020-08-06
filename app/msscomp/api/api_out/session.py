@@ -43,8 +43,7 @@ session_record_field = {
     'status': fields.Integer,
     'note': fields.String,
     'session_inputs': fields.List(fields.Nested(session_input_record_field)),
-    'session_outputs': fields.List(fields.Nested(session_output_record_field)),
-    'session_parameters': fields.List(fields.Nested(session_parameter_record_field))
+    'session_outputs': fields.List(fields.Nested(session_output_record_field))
 }
 
 

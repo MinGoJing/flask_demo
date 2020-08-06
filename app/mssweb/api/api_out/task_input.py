@@ -31,7 +31,7 @@ __all__ = [
 #
 task_input_record_field = {
     'id': fields.Integer,
-    'fk_process_id': fields.Integer,
+    'fk_task_id': fields.Integer,
     'module_name': fields.String,
     'key': fields.String,
     'index': fields.Integer,

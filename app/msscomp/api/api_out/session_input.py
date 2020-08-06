@@ -35,10 +35,11 @@ __all__ = [
 session_input_record_field = {
     'id': fields.Integer,
     'session_id': fields.Integer,
-    'name': fields.String,
+    'module_name': fields.String,
+    'key': fields.String,
     'index': fields.Integer,
-    'note': fields.String,
-    "input_values": fields.List(fields.Nested(session_input_value_record_field))
+    'data_type': fields.Integer,
+    'value': fields.String,
 }
 
 

@@ -36,9 +36,9 @@ __all__ = [
 # task_output
 # add
 task_output_add_par = RequestParser()
-task_output_add_par.add_argument('fk_process_id',
+task_output_add_par.add_argument('fk_task_id',
                                  type=int, required=True,
-                                 help='fk_process_id. (Required)')
+                                 help='fk_task_id. (Required)')
 task_output_add_par.add_argument('module_name',
                                  type=str,
                                  help='module_name.')

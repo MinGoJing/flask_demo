@@ -36,46 +36,10 @@ __all__ = [
 # session_output
 # add
 session_output_add_par = RequestParser()
-session_output_add_par.add_argument('name',
-                                    type=str, required=True,
-                                    help='Parameter group name. (Required)')
-session_output_add_par.add_argument('index',
-                                    type=str, required=True,
-                                    help='Parameter group index in session. (Required)')
-session_output_add_par.add_argument('session_id',
-                                    type=str, required=True,
-                                    help='session_id. (Required)')
-session_output_add_par.add_argument('note',
-                                    type=str,
-                                    help='note.')
 # put
-session_output_put_par = session_output_add_par.copy()
-session_output_put_par.add_argument('id',
-                                    type=int, required=True,
-                                    help='ID. (Required)')
-session_output_put_par.replace_argument('name',
-                                        type=str,
-                                        help='Parameter group name.')
-session_output_put_par.replace_argument('index',
-                                        type=str,
-                                        help='Parameter group index in session.')
-session_output_put_par.replace_argument('session_id',
-                                        type=str,
-                                        help='session_id. (Required)')
+session_output_put_par = RequestParser()
 # get
-session_output_get_par = CommonFilterParser()  # page_*, ids, disabled
-session_output_get_par.add_argument('id',
-                                    type=int,
-                                    help='ID = ?')
-session_output_get_par.add_argument('output_group_name',
-                                    type=str,
-                                    help='output_group_name = ?')
-session_output_get_par.add_argument('session_id',
-                                    type=str,
-                                    help='session_id.')
-session_output_get_par.add_argument('instance_id',
-                                    type=str,
-                                    help='instance_id.')
+session_output_get_par = RequestParser()
 
 # delete & disable
-session_output_dd_par = CommonDisableParser()  # id, ids, desc
+session_output_dd_par = RequestParser()

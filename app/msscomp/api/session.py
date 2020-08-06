@@ -76,24 +76,22 @@ class session(Resource):
     # @token_auth.login_required  # token认证方式
     # @multi_auth.login_required  # 两种综合认证方式，满足其一即可
     @marshal_with(session_record_fields)
-    def get(self, session_id):
+    def get(self, instance_id):
         #
-        obj = session_processor.fetch(session_id)
+        obj = session_processor.fetch(instance_id)
         return render_data(obj)
 
     @marshal_with(int_record_fields)
     @transaction(session=sss)
-    def put(self, session_id):
+    def put(self, instance_id):
         params = session_put_par.parse_args()
-        session_db_proc = session_processor(params)
-        ret = session_db_proc.update(unique_keys=[])
-        return render_data(ret)
+        rcd = session_processor.update(instance_id, params)
+        return render_data(rcd)
 
     @marshal_with(int_record_fields)
     @transaction(session=sss)
     def delete(self, session_id, session=sss):
-        obj = session_processor.fetch(session_id, to_user_obj=False)
-        session.delete(obj)
+        session_processor.delete(session_id, session=session)
         return render_data(session_id)
 
 
@@ -108,19 +106,18 @@ class session_s(Resource):
 
         # TODO: gen instance_id
         # ...
-
         ss_id = session_proc.add()
 
-        if (params.get("session_inputs") or params.get("session_parameters")):
+        if (params.get("session_inputs")):
             session_init(ss_id, params)
 
         # process session
-        ret = session_process()
+        session_process()
 
-        return render_data(session_proc.instance_id)
+        return render_data(ss_id)
 
     @marshal_with(session_records_fields)
-    def get(self, category=None, name=''):
+    def get(self):
         f_params = session_get_par.parse_args()
         rcds = session_s_filer(f_params)
         return render_data(rcds)

@@ -20,7 +20,7 @@
 from app.msscomp.dao import session_processor
 
 
-def session_s_filer(filter_param, joined_keys=[]):
+def session_s_filer(filter_param={}, joined_keys=[]):
     if (filter_param.get("input_name")):
         filter_param["session_inputs.name"] = filter_param["input_name"]
         filter_param.pop("input_name")
