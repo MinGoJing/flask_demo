@@ -38,10 +38,15 @@ PROJ_HOME_PATH = path.abspath(
     path.join(path.dirname(path.abspath(__file__)), ".."))
 sys.path.insert(0, PROJ_HOME_PATH)
 
-# parse yml config
+# parse configs
 #
+# db & log config
 config_path = path.join(PROJ_HOME_PATH, "config.yml")
 conf = mgt_c_yaml_object(config_path)
+# scheduler config
+schedule_cfg_path = path.join(PROJ_HOME_PATH, "config_schedule.yml")
+schedule_conf = mgt_c_yaml_object(schedule_cfg_path)
+
 
 # init system SLASH
 #

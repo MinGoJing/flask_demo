@@ -19,4 +19,4 @@
 from app import app
 
 if ("__main__" == __name__):
-    app.run("127.0.0.1", port=8088)
+    app.run("127.0.0.1", port=8088, use_reloader=False)

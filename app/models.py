@@ -56,11 +56,11 @@ class Employee(Base):
         'Department', primaryjoin='Employee.fk_department_id == Department.id', backref='employees')
 
 
-class MsFileResource(Base):
-    __tablename__ = 'ms_file_resource'
+class MsssFileResource(Base):
+    __tablename__ = 'msss_file_resource'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(128), nullable=False)
+    name = Column(String(256), nullable=False)
     host = Column(String(64))
     path = Column(String(512), nullable=False)
     disabled = Column(Integer, server_default=FetchedValue())
@@ -70,7 +70,7 @@ class MsFileResource(Base):
     note = Column(String(200))
 
     operator = relationship(
-        'User', primaryjoin='MsFileResource.operator_id == User.id', backref='ms_file_resources')
+        'User', primaryjoin='MsssFileResource.operator_id == User.id', backref='msss_file_resources')
 
 
 class MsssSession(Base):
@@ -242,7 +242,7 @@ class MsswTask(Base):
     fk_program_config_id = Column(ForeignKey(
         'mssw_program_config.id'), index=True)
     status = Column(Integer)
-    processor_id = Column(Integer)
+    processor_id = Column(ForeignKey('user.id'), index=True)
     start_time = Column(DateTime, nullable=False,
                         server_default=FetchedValue())
     finish_time = Column(DateTime)
@@ -252,50 +252,50 @@ class MsswTask(Base):
         'MsswProgramConfig', primaryjoin='MsswTask.fk_program_config_id == MsswProgramConfig.id', backref='mssw_tasks')
     fk_program = relationship(
         'MsswProgram', primaryjoin='MsswTask.fk_program_id == MsswProgram.id', backref='mssw_tasks')
+    processor = relationship(
+        'User', primaryjoin='MsswTask.processor_id == User.id', backref='mssw_tasks')
 
 
 class MsswTaskInput(Base):
     __tablename__ = 'mssw_task_input'
     __table_args__ = (
-        Index('index', 'fk_process_id', 'index'),
+        Index('index', 'fk_task_id', 'index'),
     )
 
     id = Column(Integer, primary_key=True)
-    fk_process_id = Column(ForeignKey('mssw_task.id'), nullable=False)
+    fk_task_id = Column(ForeignKey('mssw_task.id'), nullable=False)
     module_name = Column(String(64))
     key = Column(String(64), nullable=False)
     index = Column(Integer, nullable=False)
     data_type = Column(Integer, nullable=False)
     value = Column(String(1024), info='Put json config/list here.')
 
-    fk_process = relationship(
-        'MsswTask', primaryjoin='MsswTaskInput.fk_process_id == MsswTask.id', backref='mssw_task_inputs')
+    fk_task = relationship(
+        'MsswTask', primaryjoin='MsswTaskInput.fk_task_id == MsswTask.id', backref='mssw_task_inputs')
 
 
 class MsswTaskOutput(Base):
     __tablename__ = 'mssw_task_output'
     __table_args__ = (
-        Index('po_index', 'fk_process_id', 'index'),
+        Index('po_index', 'fk_task_id', 'index'),
     )
 
     id = Column(Integer, primary_key=True)
-    fk_process_id = Column(ForeignKey('mssw_task.id'),
-                           nullable=False, index=True)
+    fk_task_id = Column(ForeignKey('mssw_task.id'), nullable=False, index=True)
     key = Column(String(64), nullable=False)
     index = Column(Integer, nullable=False)
     data_type = Column(Integer, nullable=False)
     value = Column(String(1024), info='Put json config/list here.')
 
-    fk_process = relationship(
-        'MsswTask', primaryjoin='MsswTaskOutput.fk_process_id == MsswTask.id', backref='mssw_task_outputs')
+    fk_task = relationship(
+        'MsswTask', primaryjoin='MsswTaskOutput.fk_task_id == MsswTask.id', backref='mssw_task_outputs')
 
 
 class MsswTaskRecordAcces(Base):
     __tablename__ = 'mssw_task_record_access'
 
     id = Column(Integer, primary_key=True)
-    fk_process_id = Column(ForeignKey('mssw_task.id'),
-                           nullable=False, index=True)
+    fk_task_id = Column(ForeignKey('mssw_task.id'), nullable=False, index=True)
     fk_dict_record_type = Column(ForeignKey(
         'pub_dict.id'), nullable=False, index=True)
     user_id = Column(Integer)
@@ -306,8 +306,8 @@ class MsswTaskRecordAcces(Base):
 
     pub_dict = relationship(
         'PubDict', primaryjoin='MsswTaskRecordAcces.fk_dict_record_type == PubDict.id', backref='mssw_task_record_access')
-    fk_process = relationship(
-        'MsswTask', primaryjoin='MsswTaskRecordAcces.fk_process_id == MsswTask.id', backref='mssw_task_record_access')
+    fk_task = relationship(
+        'MsswTask', primaryjoin='MsswTaskRecordAcces.fk_task_id == MsswTask.id', backref='mssw_task_record_access')
     operator = relationship(
         'User', primaryjoin='MsswTaskRecordAcces.operator_id == User.id', backref='mssw_task_record_access')
 

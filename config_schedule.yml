@@ -1,0 +1,12 @@
+JOBS:
+    [
+        {
+            id: "job1",
+            func: "__main__: job_1",
+            args: [1, 2],
+            trigger: "cron",
+            hour: "*",
+            minute: "*",
+            second: 10,
+        },
+    ]
