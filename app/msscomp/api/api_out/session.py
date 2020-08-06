@@ -35,7 +35,7 @@ __all__ = [
 #
 session_record_field = {
     'id': fields.Integer,
-    'instance_id': fields.Integer,
+    'instance_id': fields.String,
     'init_time': fields.DateTime(dt_format='iso8601'),
     'start_time': fields.DateTime(dt_format='iso8601'),
     'end_time': fields.DateTime(dt_format='iso8601'),

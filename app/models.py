@@ -91,34 +91,32 @@ class MsssSessionInput(Base):
     __tablename__ = 'msss_session_input'
 
     id = Column(Integer, primary_key=True)
-    fk_session_input_id = Column(ForeignKey(
-        'msss_session_input.id'), nullable=False, index=True)
+    fk_session_id = Column(ForeignKey('msss_session.id'),
+                           nullable=False, index=True)
+    module_name = Column(String(128))
     key = Column(String(64), nullable=False)
     index = Column(Integer, nullable=False)
     data_type = Column(Integer, nullable=False)
-    v1 = Column(String(64))
-    v2 = Column(String(64))
-    v3 = Column(String(512), info='Put json config/list here.')
+    value = Column(String(1024))
 
-    fk_session_input = relationship('MsssSessionInput', remote_side=[
-                                    id], primaryjoin='MsssSessionInput.fk_session_input_id == MsssSessionInput.id', backref='msss_session_inputs')
+    fk_session = relationship(
+        'MsssSession', primaryjoin='MsssSessionInput.fk_session_id == MsssSession.id', backref='msss_session_inputs')
 
 
 class MsssSessionOutput(Base):
     __tablename__ = 'msss_session_output'
 
     id = Column(Integer, primary_key=True)
-    fk_session_output_id = Column(ForeignKey(
-        'msss_session_output.id'), nullable=False, index=True)
+    fk_session_id = Column(ForeignKey('msss_session.id'),
+                           nullable=False, index=True)
+    module_name = Column(String(128))
     key = Column(String(64), nullable=False)
     index = Column(Integer, nullable=False)
     data_type = Column(Integer, nullable=False)
-    v1 = Column(String(64))
-    v2 = Column(String(64))
-    v3 = Column(String(512), info='Put json config/list here.')
+    value = Column(String(1024))
 
-    fk_session_output = relationship('MsssSessionOutput', remote_side=[
-                                     id], primaryjoin='MsssSessionOutput.fk_session_output_id == MsssSessionOutput.id', backref='msss_session_outputs')
+    fk_session = relationship(
+        'MsssSession', primaryjoin='MsssSessionOutput.fk_session_id == MsssSession.id', backref='msss_session_outputs')
 
 
 class MsswFileResource(Base):
