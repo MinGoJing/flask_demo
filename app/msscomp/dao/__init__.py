@@ -19,16 +19,12 @@ from os import path
 # export
 from .session import *
 from .session_input import *
-from .session_input_value import *
 from .session_output import *
-from .session_output_value import *
-from .session_parameter import *
-from .session_parameter_value import *
 
 
 g_init_done = False
 if (not g_init_done):
     from app.common import init_db_processors
     CUR_FOLDER_PATH = path.dirname(path.abspath(__file__))
-    init_db_processors(CUR_FOLDER_PATH, 'msscomp')
+    init_db_processors(CUR_FOLDER_PATH, 'app.msscomp.dao')
     g_init_done = True

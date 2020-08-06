@@ -20,19 +20,19 @@
 from app.common.db import base_db_update_model
 
 # model
-from app.models import MsssOutput
+from app.models import MsssSessionOutput
 
 # export
 __all__ = [
     'session_output_processor',
-    'MsssOutput'
+    'MsssSessionOutput'
 ]
 
 
 # keep class name starts with FILENAME_BASE, and connected with _processor
 #
 class session_output_processor(base_db_update_model):
-    _entity_cls = MsssOutput
+    _entity_cls = MsssSessionOutput
     _null_supported_filter_attrs = []
     # Use db unique settings as default.
     #   You can define it here if forgot this in db design.

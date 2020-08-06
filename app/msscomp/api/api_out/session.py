@@ -22,7 +22,6 @@ from flask_restful import fields
 # local
 from .session_input import session_input_record_field
 from .session_output import session_output_record_field
-from .session_parameter import session_parameter_record_field
 
 # export
 __all__ = [

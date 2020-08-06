@@ -20,19 +20,19 @@
 from app.common.db import base_db_update_model
 
 # model
-from app.models import MsssInput
+from app.models import MsssSessionInput
 
 # export
 __all__ = [
     'session_input_processor',
-    'MsssInput'
+    'MsssSessionInput'
 ]
 
 
 # keep class name starts with FILENAME_BASE, and connected with _processor
 #
 class session_input_processor(base_db_update_model):
-    _entity_cls = MsssInput
+    _entity_cls = MsssSessionInput
     _null_supported_filter_attrs = []
     # Use db unique settings as default.
     #   You can define it here if forgot this in db design.

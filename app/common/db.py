@@ -531,7 +531,7 @@ def init_db_processors(processor_dir_path, module_name):
         # iterate db_processor
         mod_name = mod.split('.')[0]
         db_processor = import_string(
-            "app.%s.dao.%s:%s_processor" % (module_name, mod_name, mod_name))
+            "%s.%s:%s_processor" % (module_name, mod_name, mod_name))
         if (not db_processor):
             msg = ("Please define db_processor LIKE ${filename_base}_processor. "
                    "We'll do some init for your db_processor.")

@@ -20,7 +20,6 @@
 from flask_restful import fields
 
 # local
-from .session_output_value import session_output_value_record_field
 
 # export
 __all__ = [

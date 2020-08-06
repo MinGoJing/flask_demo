@@ -31,5 +31,5 @@ g_init_done = False
 if (not g_init_done):
     from app.common import init_db_processors
     CUR_FOLDER_PATH = path.dirname(path.abspath(__file__))
-    init_db_processors(CUR_FOLDER_PATH, "mssweb")
+    init_db_processors(CUR_FOLDER_PATH, "app.mssweb.dao")
     g_init_done = True

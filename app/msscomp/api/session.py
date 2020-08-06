@@ -90,8 +90,8 @@ class session(Resource):
 
     @marshal_with(int_record_fields)
     @transaction(session=sss)
-    def delete(self, session_id, session=sss):
-        session_processor.delete(session_id, session=session)
+    def delete(self, session_id):
+        session_processor.delete(session_id, session=sss)
         return render_data(session_id)
 
 

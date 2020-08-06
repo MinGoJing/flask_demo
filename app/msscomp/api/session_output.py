@@ -97,15 +97,8 @@ class session_output_s(Resource):
     # flask_restful 安全认证方式，类似于flask注解，全局认证
     # decorators = [multi_auth.login_required]
 
-    @marshal_with(int_record_fields)
-    def post(self):
-        params = session_output_add_par.parse_args()
-        session_output_proc = session_output_processor(params)
-        rcd = session_output_proc.add(unique_keys=["session_id", "index"])
-        return render_data(rcd)
-
     @marshal_with(session_output_records_fields)
-    def get(self):
-        f_params = session_output_get_par.parse_args()
+    def get(self, instance_id):
+        f_params = {"instance_id": instance_id}
         rcds = session_output_processor.get(f_params)
         return render_data(rcds)

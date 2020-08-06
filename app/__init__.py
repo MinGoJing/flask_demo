@@ -15,6 +15,7 @@
 # py
 import os
 import sys
+import shutil
 import logging
 import logging.config
 import platform
@@ -37,6 +38,10 @@ from mgutil.file import mgf_match_ls_sub_names
 PROJ_HOME_PATH = path.abspath(
     path.join(path.dirname(path.abspath(__file__)), ".."))
 sys.path.insert(0, PROJ_HOME_PATH)
+# init log dir
+log_path = path.join(PROJ_HOME_PATH, "log")
+if (not path.exists(log_path)):
+    os.mkdir(log_path)
 
 # parse configs
 #
@@ -112,7 +117,7 @@ else:
 #
 # api
 sub_modules = mgf_match_ls_sub_names(PROJ_HOME_PATH + conf.SLASH + "app",
-                                     match_exp="^(?!msscomp)[^_]+$",
+                                     match_exp="^[^_]+$",  # (?!msscomp)
                                      is_path_relative=True, match_opt=1)
 api = Api(app)
 # register blue prints

@@ -56,7 +56,6 @@ class session_processor(base_db_update_model):
     _unique_user_key_list = ["instance_id"]
     _key_2_db_attr_map = {
         "session_inputs": "msss_session_inputs",
-        "session_outputs": "msss_session_outputs",
-        "session_parameters": "msss_session_parameters"
+        "session_outputs": "msss_session_outputs"
     }
     _entity_relation_backref_db_attr_list = []
