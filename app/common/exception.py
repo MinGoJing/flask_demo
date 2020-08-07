@@ -36,13 +36,15 @@ class APIException(HTTPException):
     data = None
     # full environment data
     raw_data = None
-    code = RET.E_UNEXPECTED
+    result_code = RET.E_UNEXPECTED
     msg = "Ops, API unexpected error occurs."
 
     def __init__(self, data=None, msg="", raw_data=None, lan="en"):
         self.data = data
-        self.msg = "%s: %s" % (self._ret_cls.INFO(self.code, lan), self.msg)
+        self.msg = "%s: %s" % (self._ret_cls.INFO(
+            self.result_code, lan), self.msg)
         self.init_msg(data, msg)
+        self.code = self.status
 
         log.error(self.msg)
         HTTPException.__init__(self, self.msg)
@@ -50,10 +52,10 @@ class APIException(HTTPException):
     def __str__(self):
         return self.msg
 
-    def get_response(self):
+    def get_response(self, environ=None):
         d = {
             "msg": self.msg,
-            "code": self.code,
+            "code": self.result_code,
             "data": self.raw_data
         }
         return d
@@ -61,10 +63,10 @@ class APIException(HTTPException):
     def get_headers(self):
         return [("content-type", "application/json")]
 
-    def get_body(self, environ):
+    def get_body(self, environ=None):
         resp = {
             "msg": self.msg,
-            "code": self.code,
+            "code": self.result_code,
             "data": self.raw_data
         }
         return json.dumps(resp)
@@ -87,8 +89,8 @@ class APIException(HTTPException):
             except Exception as e:
                 print(e)
                 assert(-1)
-        elif (not msg.startswith(RET.INFO(self.code))):
-            msg = "%s: %s" % (RET.INFO(self.code), msg)
+        elif (not msg.startswith(RET.INFO(self.result_code))):
+            msg = "%s: %s" % (RET.INFO(self.result_code), msg)
         else:
             self.msg = msg
 
@@ -96,7 +98,7 @@ class APIException(HTTPException):
 
     @property
     def status(self):
-        hex_code = (self.code >> 8) & (0x0FFF)
+        hex_code = (self.result_code >> 8) & (0x0FFF)
         http_code = (hex_code >> 8) * 100 + \
             ((hex_code >> 4) & 0x0F) * 10 + (hex_code & 0x0F)
         return http_code
@@ -108,7 +110,7 @@ class InvalidEntityClsException(APIException):
             entity name
     """
 
-    code = RET.E_ORM_ENTITY_NOT_FOUND_ERROR
+    result_code = RET.E_ORM_ENTITY_NOT_FOUND_ERROR
     msg = "db entity[{}] NOT found."
 
 
@@ -118,7 +120,7 @@ class QueryJoinRuleLengthNotSupportException(APIException):
         str: local_table.db_key
 
     """
-    code = RET.E_ORM_JOIN_RULE_LENGTH_NOT_SUPPORTED_ERROR
+    result_code = RET.E_ORM_JOIN_RULE_LENGTH_NOT_SUPPORTED_ERROR
     msg = ("db entity join <{}> rule length NOT supported.")
 
 
@@ -128,7 +130,7 @@ class EntityAutoJoinFailedException(APIException):
             'local_table.db_key'
 
     """
-    code = RET.E_ENTITY_AUTO_JOIN_FAILED
+    result_code = RET.E_ENTITY_AUTO_JOIN_FAILED
     msg = ("db entity AUTO join from <{}> failed.")
 
 
@@ -140,7 +142,7 @@ class BadParameterException(APIException):
         @any  : current value
         @type2: required type
     """
-    code = RET.E_BAD_PARAMETER
+    result_code = RET.E_BAD_PARAMETER
     msg = ("parameter[{}<{}> : {}] NOT in required type<{}>")
 
 
@@ -148,7 +150,7 @@ class InvalidArgsException(APIException):
     """
     @data : str : invalid parameter names seperated with ','
     """
-    code = RET.E_INVALID_ARG
+    result_code = RET.E_INVALID_ARG
     msg = ("NOT all parameters[{}] were given.")
 
 
@@ -156,7 +158,7 @@ class QueryMapFormatException(APIException):
     """
     @data : str : error query map keys seperated with ','
     """
-    code = RET.E_BAD_PARAMETER
+    result_code = RET.E_BAD_PARAMETER
     msg = "entity <{}> query map keys<{}> error."
 
 
@@ -165,7 +167,7 @@ class StringFieldEmptyException(APIException):
     @data : str
             filed name.
     """
-    code = RET.E_INVALID_ARG
+    result_code = RET.E_INVALID_ARG
     msg = ("String field<{}> is empty.")
 
 
@@ -175,7 +177,7 @@ class EntityUpdateUniqueKeyExistsException(APIException):
         @str1: DB entity table name;
         @str2: unique key item of list;
     """
-    code = RET.E_ENTITY_UPDATE_UNIQUE_ERROR
+    result_code = RET.E_ENTITY_UPDATE_UNIQUE_ERROR
     msg = ("Entity <{}> object add/update <{}> unique check error.")
 
 
@@ -185,7 +187,7 @@ class EntityBackrefAttributeNotFoundException(APIException):
         @str : entity_tale_name
         @str : entity backref attribute
     """
-    code = RET.E_ENTITY_BACKREF_NOT_FOUND_ERROR
+    result_code = RET.E_ENTITY_BACKREF_NOT_FOUND_ERROR
     msg = ('entity <{}> backref attribute <{}> NOT found.')
 
 
@@ -195,7 +197,7 @@ class UpdateEntityNotFoundException(APIException):
         @str : entity_tale_name
         @int : entity_id
     """
-    code = RET.E_UPDATE_ENTITY_NOT_FOUND
+    result_code = RET.E_UPDATE_ENTITY_NOT_FOUND
     msg = ('Entity <{} id:{}> NOT FOUND, update failed.')
 
 
@@ -205,5 +207,5 @@ class DeleteEntityNotFoundException(APIException):
         @str : entity_tale_name
         @int : entity_id
     """
-    code = RET.S_DELETE_ENTITY_NOT_FOUND
+    result_code = RET.S_DELETE_ENTITY_NOT_FOUND
     msg = ('Entity <{} id:{}> NOT FOUND, delete failed.')

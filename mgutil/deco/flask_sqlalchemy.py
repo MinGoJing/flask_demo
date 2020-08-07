@@ -43,7 +43,7 @@ def transaction(session):
 
                 if (isinstance(e, HTTPException) and hasattr(e, "status")):
                     resp = make_response(
-                        e.get_response(), e.status, e.get_headers())
+                        e.get_response(), e.code, e.get_headers())
                     abort(resp)
 
                 raise (e)
