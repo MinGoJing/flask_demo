@@ -43,7 +43,7 @@ class APIException(HTTPException):
         self.data = data
         self.msg = "%s: %s" % (self._ret_cls.INFO(
             self.result_code, lan), self.msg)
-        self.init_msg(data, msg)
+        self._init_msg(data, msg)
         self.code = self.status
 
         log.error(self.msg)
@@ -63,7 +63,7 @@ class APIException(HTTPException):
         }
         return json.dumps(resp)
 
-    def init_msg(self, data=None, msg=""):
+    def _init_msg(self, data=None, msg=""):
         if (data and not msg):
             try:
                 if (not isinstance(data, (tuple, list, dict))):
