@@ -41,9 +41,8 @@ def transaction(session):
                 if (session.is_active):
                     session.rollback()
 
-                if (isinstance(e, HTTPException) and hasattr(e, "status")):
-                    resp = make_response(
-                        e.get_body(), e.code, e.get_headers())
+                if (isinstance(e, HTTPException) and hasattr(e, "get_response")):
+                    resp = e.get_response()
                     abort(resp)
 
                 raise (e)
