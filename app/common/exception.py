@@ -52,15 +52,7 @@ class APIException(HTTPException):
     def __str__(self):
         return self.msg
 
-    def get_response(self, environ=None):
-        d = {
-            "msg": self.msg,
-            "code": self.result_code,
-            "data": self.raw_data
-        }
-        return d
-
-    def get_headers(self):
+    def get_headers(self, environ=None):
         return [("content-type", "application/json")]
 
     def get_body(self, environ=None):

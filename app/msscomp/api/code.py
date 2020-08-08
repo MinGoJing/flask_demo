@@ -15,6 +15,9 @@
 
 # py
 
+# common RET
+from app.common import RET as RET_COMMON
+
 
 # ****************************************************************************
 #   Layer Codes Area Define!
@@ -60,3 +63,7 @@ class RET(object):
             "en": "<RET NOT FOUND>",
             "zh-cn": "<未知返回值>"}
     }
+
+    @staticmethod
+    def INFO(code, lan="en"):
+        return RET._info_dict.get(code, RET_COMMON.INFO(code)).get(lan).replace('_', ' ')

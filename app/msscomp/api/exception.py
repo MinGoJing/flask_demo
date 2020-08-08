@@ -22,6 +22,22 @@ from app.common.exception import APIException
 # local
 from .code import RET
 
+# log
+import logging
+log = logging.getLogger("MSS")
+
 
 class MsssAPIException(APIException):
     _ret_cls = RET
+
+    def __init__(self, data=None, msg="", raw_data=None, lan="en"):
+        APIException.__init__(self, data=data, msg=msg,
+                              raw_data=raw_data, lan=lan)
+
+
+class E0Exception(MsssAPIException):
+    """
+    @data : ()
+    """
+    result_code = RET.E_
+    msg = ('haha')
