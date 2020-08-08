@@ -18,7 +18,9 @@ import inspect
 from werkzeug.exceptions import HTTPException
 
 # flask
-from flask import abort, make_response
+from flask import abort
+from flask import make_response
+from sqlalchemy.exc import DBAPIError
 
 
 __all__ = ["transaction"]
@@ -41,29 +43,27 @@ def transaction(session):
                 if (session.is_active):
                     session.rollback()
 
-                if (isinstance(e, HTTPException) and hasattr(e, "get_response")):
+                if (isinstance(e, HTTPException)):
                     resp = e.get_response()
+                    abort(resp)
+                elif (isinstance(e, DBAPIError)):
+                    if (hasattr(e, "orig") and 2 <= len(e.orig.args)):
+                        e_args = e.orig.args
+                        code = -(e_args[0])
+                        msg = e_args[1]
+                        return {"code": code, "data": 0, "msg": msg}
+                    else:
+                        code = e.code
+                        msg = str(e)
+                    resp = make_response({"code": code, "data": 0, "msg": msg}, 500,
+                                         {"Content-Type": "application/json"})
+                    abort(resp)
+                else:
+                    resp = make_response({"code": -1, "data": 0, "msg": str(e)}, 500,
+                                         {"Content-Type": "application/json"})
                     abort(resp)
 
                 raise (e)
-
-                # if (not isinstance(e, (IntegrityError, TypeError, AttributeError))):
-                #     return {"code": e.code, "data": e.data, "msg": str(e)}
-                # elif isinstance(e, IntegrityError):
-                #     if (hasattr(e, "orig") and 2 <= len(e.orig.args)):
-                #         e_args = e.orig.args
-                #         code = -(e_args[0])
-                #         msg = e_args[1]
-                #         return {"code": code, "data": 0, "msg": msg}
-                #     else:
-                #         code = e.code
-                # elif isinstance(e, AttributeError):
-                #     code = -2
-                # elif isinstance(e, TypeError):
-                #     code = -3
-                # else:
-                #     code = -9
-                # return {"code": code, "data": 0, "msg": str(e)}
 
         return sub_trans_wrapper
     return trans_wrapper
