@@ -70,3 +70,7 @@ LOGGER:
         MSS:
             level: INFO
             handlers: ["mss_file", "console"]
+
+        UTIL:
+            level: INFO
+            handlers: ["mss_file", "console"]

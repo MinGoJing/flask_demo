@@ -20,7 +20,7 @@
 
 # log
 import logging
-log = logging.getLogger('MSS')
+log = logging.getLogger('UTIL')
 
 
 class UtilBaseException(Exception):
@@ -76,10 +76,11 @@ class SubFeatureFilterTypeNotSupportException(UtilBaseException):
 
 class SubFeatureFilterKeyNotFoundException(UtilBaseException):
     """
-    @data : str
-        @str : key name
+    @data : (str1, str2)
+        @str1 : full key path
+        @str2 : not found key
     """
-    msg = ('Sub feature filter key <{}> NOT found error')
+    msg = ('Sub feature filter key <{} :: {}> NOT found error')
 
 
 class SubFeatureDictIndexKeyNotFoundException(UtilBaseException):
@@ -105,3 +106,12 @@ class SubFeatureDictMultiTargetValueException(UtilBaseException):
         @str : key name
     """
     msg = ('Sub feature dict target key value <{}> more than one')
+
+
+class SubFeatureMarshalTargetAttributeLostException(UtilBaseException):
+    """
+    @data : (str, any)
+        @str1 : source match key path
+        @any : source match key value
+    """
+    msg = ('Sub feature marshal source key<{}> value<{}>, lost target attribute')
