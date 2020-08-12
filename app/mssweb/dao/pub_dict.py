@@ -16,7 +16,7 @@
 # py
 
 # common
-from app.common.db import base_db_update_model
+from app.common.db import base_db_update_processor
 
 # model
 from app.models import PubDict
@@ -30,7 +30,7 @@ __all__ = [
 
 # keep class name starts with FILENAME_BASE, and connected with _processor
 #
-class pub_dict_processor(base_db_update_model):
+class pub_dict_processor(base_db_update_processor):
     _entity_cls = PubDict
     _null_supported_filter_attrs = []
     # If NOT set, inner_join if foreign_key is NOT nullable else left_join

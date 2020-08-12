@@ -17,7 +17,7 @@
 
 
 # common
-from app.common.db import base_db_update_model
+from app.common.db import base_db_update_processor
 
 # model
 from app.models import MsswTaskInput
@@ -31,7 +31,7 @@ __all__ = [
 
 # keep class name starts with FILENAME_BASE, and connected with _processor
 #
-class task_input_processor(base_db_update_model):
+class task_input_processor(base_db_update_processor):
     _entity_cls = MsswTaskInput
     _null_supported_filter_attrs = []
     # Use db unique settings as default.

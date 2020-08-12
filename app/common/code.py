@@ -73,7 +73,8 @@ TRD_LAYER = 0x0D000000
 MODULE_DB = 0x0000000
 MODULE_ORM = 0x0100000
 MODULE_SYS = 0x0200000
-MODULE_REQ = 0x0300000
+MODULE_ENG = 0x0300000
+MODULE_REQ = 0x0400000
 
 
 class RET(object):
@@ -128,6 +129,14 @@ class RET(object):
 
     S_DELETE_ENTITY_NOT_FOUND = \
         (SUCCESS_CODE(PLF_LAYER, MODULE_ORM, 0x200, 0x01))
+
+    # =========================================================##
+    # SVC - ENGINE
+    # =========================================================##
+    E_INIT_PROCESSOR_TABLENAME_NOT_FOUND = \
+        (FAIL_CODE(SVC_LAYER, MODULE_ENG, 0x500, 0x01))
+    E_INIT_PROCESSOR_TABLE_DATA_NOT_FOUND = \
+        (FAIL_CODE(SVC_LAYER, MODULE_ENG, 0x500, 0x02))
 
     # =========================================================##
     # API - request
@@ -200,6 +209,15 @@ class RET(object):
         S_DELETE_ENTITY_NOT_FOUND: {
             "en": "S_DELETE_ENTITY_NOT_FOUND",
             "zh-cn": "对象删除未完成，ID无效"},
+
+        # SVC ENG
+        #
+        E_INIT_PROCESSOR_TABLENAME_NOT_FOUND: {
+            "en": "E_INIT_PROCESSOR_TABLENAME_NOT_FOUND",
+            "zh-cn": "数据表初始化，对应InitProcessor未找到"},
+        E_INIT_PROCESSOR_TABLE_DATA_NOT_FOUND: {
+            "en": "E_INIT_PROCESSOR_TABLE_DATA_NOT_FOUND",
+            "zh-cn": "数据表初始化，对应数据未找到"},
 
         # API REQ
         #

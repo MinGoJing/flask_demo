@@ -201,3 +201,21 @@ class DeleteEntityNotFoundException(APIException):
     """
     result_code = RET.S_DELETE_ENTITY_NOT_FOUND
     msg = ('Entity <{} id:{}> NOT FOUND, delete failed.')
+
+
+class InitProcessorNotFoundException(APIException):
+    """
+    @data : str
+        @str : table name
+    """
+    result_code = RET.E_INIT_PROCESSOR_TABLENAME_NOT_FOUND
+    msg = ('Db init, table<{}> InitProcessor NOT found.')
+
+
+class DbEntityInitTableDataNotFoundException(APIException):
+    """
+    @data : str
+        @str : table name
+    """
+    result_code = RET.E_INIT_PROCESSOR_TABLE_DATA_NOT_FOUND
+    msg = ('Db init, table<{}> datasheet NOT found.')

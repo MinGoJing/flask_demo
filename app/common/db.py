@@ -26,6 +26,7 @@ from sqlalchemy.orm import joinedload
 
 # base util
 from mgutil.base import mgt_c_object
+from mgutil.base import sub_feature_dict
 from mgutil.base import g_exclude_attrs_from_db_model
 from mgutil.base import attr_list
 from mgutil.deco import transaction
@@ -44,6 +45,8 @@ from .exception import EntityUpdateUniqueKeyExistsException
 from .exception import EntityAutoJoinFailedException
 from .exception import EntityBackrefAttributeNotFoundException
 from .exception import UpdateEntityNotFoundException
+from .exception import DbEntityInitTableDataNotFoundException
+from .exception import InitProcessorNotFoundException
 
 # log
 import logging
@@ -51,9 +54,10 @@ log = logging.getLogger("SYS")
 
 # export
 __all__ = [
+    "init_db_processors",
     "base_db_processor",
-    "base_db_update_model",
-    "init_db_processors"
+    "base_db_update_processor",
+    "base_db_init_processor"
 ]
 
 # global
@@ -747,7 +751,7 @@ def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key):
     return remote_entity_cls, jointype, relation_pairs
 
 
-class base_db_update_model(base_db_processor):
+class base_db_update_processor(base_db_processor):
 
     def add(self, session=db.session, unique_keys=[], do_flush=True):
         self.operator_id = None
@@ -767,3 +771,98 @@ class base_db_update_model(base_db_processor):
         up_params["operator_id"] = None
         up_params["operate_time"] = datetime.now()
         return super().update(model_id, up_params, session=session, unique_keys=unique_keys)
+
+
+def base_db_init_processor(base_db_processor):
+    __init_flag = False
+    __table_dependences = []
+    # @str1 : {"remote_table": @str2, "fetch_key": @str3, "remote_ref_key": @str4}
+    #   @ref_key: local reference key
+    #   @str2: reference table name
+    #   @str3: reference table's fetch key
+    #   @str4: reference table's reference key, not given => 'id'
+    __reference_key_2_fetch_target = {}
+    __autogen_keys = []
+    __local_unique_fetch_keys = []  # except id
+    __friend_key_2_key_dict = {}
+
+    @classmethod
+    def initialize(cls, table_2_datasheet_dict={}, b_db_datasheet=False):
+        # prepare reference table datasheet
+        #
+        for ref_table_name in cls.__table_dependences:
+            db_processor = g_entity_table_2_processor_map[ref_table_name]
+            db_init_processor_name = db_processor.__name__.replace(
+                '_processor', '_init_processor')
+            db_init_processor = globals().get(db_init_processor_name)
+            if (not db_init_processor):
+                raise InitProcessorNotFoundException(ref_table_name)
+            if (db_init_processor.__init_flag):
+                continue
+            db_init_processor.initialize(
+                table_2_datasheet_dict, b_db_datasheet)
+
+        # get datasheet by tablename, and init entity objects
+        #
+        friend_key_2_key_map = cls.__friend_key_2_key_dict
+        db_attr_2_key_map = cls._db_attr_2_key_map
+        if (b_db_datasheet):
+            friend_key_2_key_map = db_attr_2_key_map
+        table_name = cls.tablename()
+        datasheet = table_2_datasheet_dict.get(table_name)
+        if (not datasheet):
+            raise DbEntityInitTableDataNotFoundException(table_name)
+        else:
+            # force db_attr -> API_key
+            datasheet = {friend_key_2_key_map.get(
+                friend_key, friend_key): value for friend_key, value in datasheet.items()}
+        entity_list = [db_init_processor(data) for data in datasheet]
+        # prepare ref_table's ref_key2(fetch_key2id_dict) map
+        ref_key2fetch_dict_map = {}
+        for ref_db_attr in cls._entity_relation_backref_db_attr_list:
+            ref_key = db_attr_2_key_map.get(ref_db_attr, ref_db_attr)
+            # TODO: jmj, reference table to de omitted
+            if (ref_key not in cls.__reference_key_2_fetch_target):
+                raise Exception(
+                    "ref_key<{}> remote tablename NOT given.".format(ref_key))
+            # prepare fetch parameter
+            fetch_tar = cls.__reference_key_2_fetch_target[ref_key]
+            fetch_key = fetch_tar.get(
+                "fetch_key", fetch_tar.get("remote_ref_key", "id"))
+            remote_table_name = fetch_tar["remote_table"]
+            ref_init_processor = globals().get(remote_table_name)
+            if (not ref_init_processor):
+                raise InitProcessorNotFoundException(remote_table_name)
+            fetch_values = [getattr(etty, ref_key) for etty in entity_list]
+            fetch_values = list(set(fetch_values))
+            # filter & gen dict
+            ref_entity_objs = ref_init_processor.get(
+                {fetch_key+"s": fetch_values})
+            if ("id" != fetch_key):
+                fetch_key2id_dict = sub_feature_dict(
+                    ref_entity_objs, fetch_key, ["id"])
+                ref_key2fetch_dict_map[ref_key] = fetch_key2id_dict
+
+        # fix key(ref, autogen_attr) and add
+        for entity in entity_list:
+            # fix reference id
+            for ref_key in ref_key2fetch_dict_map:
+                remote_key = getattr(entity, ref_key)
+                if (not remote_key):
+                    continue  # ref_id is None
+                remote_key2id_dict = ref_key2fetch_dict_map[ref_key]
+                remote_id = remote_key2id_dict.get(remote_key)
+                setattr(entity, remote_id)
+
+            # full local key
+            for key in cls.__autogen_attrs:
+                entity.attr_generate(key, getattr(entity, key))
+
+            cls.add(entity)
+
+        return
+
+    def attr_generate(self, db_attr, *args):
+        db_attr = db_attr
+        args = args
+        return
