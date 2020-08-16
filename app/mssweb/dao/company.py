@@ -1,44 +1,44 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 '''
-@File    :   pub_dict_dao.py
-@Desc    :   provide pub dict model process.
+@File    :   company.py
+@Desc    :   provide company processors
 @Version :   1.0
 @Author  :   MinGo
 @Contact :   mingo_jing@163.com
 @License :   (C)Copyright since 2020, MinGo
 @History :   
-    1.0: 2020/05/10 15:01, MinGo
+    1.0: 2020/08/16 23:10, MinGo
           1. Created.
 
 '''
 
 # py
 
+
 # common
 from app.common.db import base_db_init_processor
 from app.common.db import base_db_update_processor
 
 # model
-from app.models import PubDict
-
+from app.models import Company
 
 # export
 __all__ = [
-    'pub_dict_processor',
-    'pub_dict_init_processor',
-    'PubDict'
+    'company_processor',
+    'company_init_processor',
+    'Company'
 ]
 
 
 # keep class name starts with FILENAME_BASE, and connected with _processor
 #
-class pub_dict_processor(base_db_update_processor):
-    _entity_cls = PubDict
+class company_processor(base_db_update_processor):
+    _entity_cls = Company
     _null_supported_filter_attrs = []
     # Use db unique settings as default.
     #   You can define it here if forgot this in db design.
-    _unique_user_key_list = ["name", "category"]
+    _unique_user_key_list = ["name"]
     _key_2_db_attr_map = {}
     _default_value_map = {}
     # If NOT set, inner_join if foreign_key is NOT nullable else left_join
@@ -56,12 +56,12 @@ class pub_dict_processor(base_db_update_processor):
     _ex_join_rules_from_db_key = {}
 
 
-class pub_dict_init_processor(pub_dict_processor, base_db_init_processor):
-    _entity_cls = PubDict
+class company_init_processor(company_processor, base_db_init_processor):
+    _entity_cls = Company
     _null_supported_filter_attrs = []
     # Use db unique settings as default.
     #   You can define it here if forgot this in db design.
-    _unique_user_key_list = ["name", "category"]
+    _unique_user_key_list = ["name"]
     _key_2_db_attr_map = {}
     _default_value_map = {}
     # If NOT set, inner_join if foreign_key is NOT nullable else left_join

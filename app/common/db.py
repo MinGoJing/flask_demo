@@ -24,29 +24,29 @@ from flask_restful import fields
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import joinedload
 
-# base util
+# app
+from app import db
+
+# mgutil
 from mgutil.base import mgt_c_object
 from mgutil.base import sub_feature_dict
 from mgutil.base import g_exclude_attrs_from_db_model
 from mgutil.base import attr_list
 from mgutil.deco import transaction
-
-# app
-from app import db
-
-# mgutil
 from mgutil.file import mgf_match_ls_sub_names
 
 # local
+from .func import is_data_rendered
 from .code import RET
 from .exception import QueryMapFormatException
 from .exception import QueryJoinRuleLengthNotSupportException
 from .exception import EntityUpdateUniqueKeyExistsException
 from .exception import EntityAutoJoinFailedException
 from .exception import EntityBackrefAttributeNotFoundException
-from .exception import UpdateEntityNotFoundException
+from .exception import EntityNotFoundException
 from .exception import DbEntityInitTableDataNotFoundException
 from .exception import InitProcessorNotFoundException
+from .exception import DBEntityRemoteReferenceNotMatchException
 
 # log
 import logging
@@ -62,6 +62,7 @@ __all__ = [
 
 # global
 g_entity_table_2_processor_map = {}
+g_entity_table_2_init_processor_map = {}
 
 
 class base_db_processor(mgt_c_object):
@@ -81,6 +82,7 @@ class base_db_processor(mgt_c_object):
     _unique_user_key_list = None
     _null_supported_filter_attrs = None
     _entity_relation_backref_db_attr_list = None
+    _entity_relation_fk_ref_db_attr_list = None
 
     def __init__(self, in_obj={}, b_reverse=False, entity_cls_name=None, key2attr_map: dict = {}):
         from .exception import InvalidEntityClsException
@@ -99,6 +101,8 @@ class base_db_processor(mgt_c_object):
         self._exclude_attr_list += g_exclude_attrs_from_db_model
         if (self._entity_relation_backref_db_attr_list is None):
             self._entity_relation_backref_db_attr_list = []
+        if (self._entity_relation_fk_ref_db_attr_list is None):
+            self._entity_relation_fk_ref_db_attr_list = []
         if (self._support_attr_list is None):
             self._support_attr_list = []
         self._support_attr_list += set(attr_list(
@@ -453,7 +457,7 @@ class base_db_processor(mgt_c_object):
 
         entity_obj = cls.fetch(entity_id, to_user_obj=False)
         if (not entity_obj):
-            raise UpdateEntityNotFoundException((cls.tablename(), entity_id))
+            raise EntityNotFoundException((cls.tablename(), entity_id))
         cls._update_entity_attrs(entity_obj, update_dict)
         session.merge(entity_obj)
         return entity_obj.id
@@ -479,6 +483,8 @@ class base_db_processor(mgt_c_object):
     @transaction(session=db.session)
     def delete(cls, entity_id, session=db.session):
         entity_obj = cls.fetch(entity_id, to_user_obj=False)
+        if (not entity_obj):
+            raise EntityNotFoundException(cls.tablename(), entity_id)
         session.delete(entity_obj)
         return entity_id
 
@@ -519,7 +525,7 @@ def parse_attr_s(entity_cls, key2attr_map, key):
     return attr, attr_s, db_key, db_key_s
 
 
-def init_db_processors(processor_dir_path, module_name):
+def init_db_processors(processor_dir_path, module_name, init_submod_list=[]):
     # init db_processor._db_attr_2_key_map
     sub_modules = mgf_match_ls_sub_names(processor_dir_path,
                                          match_exp="^(?!_).+$",
@@ -530,7 +536,6 @@ def init_db_processors(processor_dir_path, module_name):
     #   "attr_list": <list:str>
     #   "attr_default_value_list": <list:(None|[])>
     # }
-
     for mod in sub_modules:
         # iterate db_processor
         mod_name = mod.split('.')[0]
@@ -540,57 +545,83 @@ def init_db_processors(processor_dir_path, module_name):
             msg = ("Please define db_processor LIKE ${filename_base}_processor. "
                    "We'll do some init for your db_processor.")
             raise Exception(msg)
+        init_processor(db_processor, g_entity_table_2_processor_map)
+        # db init processor
+        if mod_name in init_submod_list:
+            db_init_processor = import_string(
+                "%s.%s:%s_init_processor" % (module_name, mod_name, mod_name))
+            if (not db_init_processor):
+                msg = ("Please define db_processor LIKE ${filename_base}_init_processor. "
+                       "We'll do some init for your db_processor.")
+                log.warning(msg)
+            else:
+                init_processor(db_init_processor,
+                               g_entity_table_2_init_processor_map)
 
-        # init db_processor 2 db_attr2key map
-        attr2key_map = db_processor.db_attr_2_key_map()
-        table_name = str(db_processor._entity_cls.__tablename__)
-        if (attr2key_map and not mgt_c_object._table_2_db_attr2key_map.get(table_name)):
-            mgt_c_object._table_2_db_attr2key_map[table_name] = attr2key_map
-        # init tablename 2 db_processor map
-        g_entity_table_2_processor_map[table_name] = db_processor
+    return
 
-        # init backref db keys
-        relation_ships = inspect(db_processor._entity_cls).relationships
-        if (not db_processor._entity_relation_backref_db_attr_list):
-            db_processor._entity_relation_backref_db_attr_list = []
-        for tar_relation in relation_ships:
-            if (not tar_relation.backref):
-                db_processor._entity_relation_backref_db_attr_list.append(
-                    tar_relation.key)
-        # affect to mgt_c_object._to_model_excelude_db_attr_list
-        if (not db_processor._to_model_excelude_db_attr_list):
-            db_processor._to_model_excelude_db_attr_list = db_processor._entity_relation_backref_db_attr_list
+
+def init_processor(db_processor, processor_map=g_entity_table_2_processor_map):
+    # init db_processor 2 db_attr2key map
+    attr2key_map = db_processor.db_attr_2_key_map()
+    table_name = str(db_processor._entity_cls.__tablename__)
+    if (attr2key_map and not mgt_c_object._table_2_db_attr2key_map.get(table_name)):
+        mgt_c_object._table_2_db_attr2key_map[table_name] = attr2key_map
+    # init tablename 2 db_processor map
+    processor_map[table_name] = db_processor
+
+    # init backref db keys
+    relation_ships = inspect(db_processor._entity_cls).relationships
+    if (db_processor._entity_relation_backref_db_attr_list is None):
+        db_processor._entity_relation_backref_db_attr_list = []
+    if (db_processor._entity_relation_fk_ref_db_attr_list is None):
+        db_processor._entity_relation_fk_ref_db_attr_list = []
+    for tar_relation in relation_ships:
+        if (not tar_relation.backref):
+            db_processor._entity_relation_backref_db_attr_list.append(
+                tar_relation.key)
         else:
-            db_processor._to_model_excelude_db_attr_list += db_processor._entity_relation_backref_db_attr_list
+            db_processor._entity_relation_fk_ref_db_attr_list.append(
+                "%s_id" % tar_relation.key)
 
-        # init db_processor _unique_user_key_list
+    db_processor._entity_relation_backref_db_attr_list = list(
+        set(db_processor._entity_relation_backref_db_attr_list))
+    db_processor._entity_relation_fk_ref_db_attr_list = list(
+        set(db_processor._entity_relation_fk_ref_db_attr_list))
+    # affect to mgt_c_object._to_model_excelude_db_attr_list
+    if (not db_processor._to_model_excelude_db_attr_list):
+        db_processor._to_model_excelude_db_attr_list = db_processor._entity_relation_backref_db_attr_list
+    else:
+        db_processor._to_model_excelude_db_attr_list += db_processor._entity_relation_backref_db_attr_list
+
+    # init db_processor _unique_user_key_list
+    uq_user_keys = []
+    entity_cls = db_processor._entity_cls
+    db_attrs = attr_list(entity_cls,
+                         include_attrs=[],
+                         exclude_attrs=[] if (
+                             db_processor._exclude_attr_list is None) else db_processor._exclude_attr_list,
+                         attr2key_map={},
+                         entity_relation_backref_attrs=[])
+    for db_attr in db_attrs:
+        col = getattr(entity_cls, db_attr, None)
+        if (not col):
+            continue
+        if (hasattr(col, "comparator") and hasattr(col.comparator, "unique")):
+            if (col.comparator.unique):
+                uq_user_keys.append(attr2key_map.get(db_attr, db_attr))
+    if (1 == len(uq_user_keys)):
+        db_processor._unique_user_key_list = uq_user_keys
+    elif (hasattr(entity_cls, "__table_args__")):
         uq_user_keys = []
-        entity_cls = db_processor._entity_cls
-        db_attrs = attr_list(entity_cls,
-                             include_attrs=[],
-                             exclude_attrs=[] if (
-                                 db_processor._exclude_attr_list is None) else db_processor._exclude_attr_list,
-                             attr2key_map={},
-                             entity_relation_backref_attrs=[])
-        for db_attr in db_attrs:
-            col = getattr(entity_cls, db_attr, None)
-            if (not col):
-                continue
-            if (hasattr(col, "comparator") and hasattr(col.comparator, "unique")):
-                if (col.comparator.unique):
-                    uq_user_keys.append(attr2key_map.get(db_attr, db_attr))
-        if (1 == len(uq_user_keys)):
-            db_processor._unique_user_key_list = uq_user_keys
-        elif (hasattr(entity_cls, "__table_args__")):
-            uq_user_keys = []
-            for arg in entity_cls.__table_args__:
-                if (str(arg).startswith("Index(")):
-                    for col in arg.columns:
-                        uq_user_keys.append(attr2key_map.get(col.key, col.key))
-                break
-            db_processor._unique_user_key_list = uq_user_keys
-        elif (not db_processor._unique_user_key_list):
-            db_processor._unique_user_key_list = []
+        for arg in entity_cls.__table_args__:
+            if (str(arg).startswith("Index(")):
+                for col in arg.columns:
+                    uq_user_keys.append(attr2key_map.get(col.key, col.key))
+            break
+        db_processor._unique_user_key_list = uq_user_keys
+    elif (not db_processor._unique_user_key_list):
+        db_processor._unique_user_key_list = []
 
     return
 
@@ -773,67 +804,88 @@ class base_db_update_processor(base_db_processor):
         return super().update(model_id, up_params, session=session, unique_keys=unique_keys)
 
 
-def base_db_init_processor(base_db_processor):
-    __init_flag = False
-    __table_dependences = []
-    # @str1 : {"remote_table": @str2, "fetch_key": @str3, "remote_ref_key": @str4}
-    #   @ref_key: local reference key
+class base_db_init_processor(base_db_processor):
+    _init_flag = False
+    _table_dependences = []
+    # @str1 : {
+    #   "remote_table": @str2,
+    #   "fetch_key": @str3,
+    #   "remote_ref_key": @str4
+    # }
+    #   @str1: local reference key
     #   @str2: reference table name
     #   @str3: reference table's fetch key
-    #   @str4: reference table's reference key, not given => 'id'
-    __reference_key_2_fetch_target = {}
-    __autogen_keys = []
-    __local_unique_fetch_keys = []  # except id
-    __friend_key_2_key_dict = {}
+    #   @str4: reference table's reference key, (not given == 'id')
+    _reference_key_2_fetch_target = {}
+    _autogen_keys = []
+    # the columns displayed to user is usually friendly
+    #   we should transform them 2 processor key
+    _friend_key_2_key_dict = {}
 
     @classmethod
     def initialize(cls, table_2_datasheet_dict={}, b_db_datasheet=False):
+        # if initted, break
+        table_name = cls.tablename()
+        if (cls._init_flag):
+            log.warning("<{}> already initialized, break.".format(table_name))
+            return
+
         # prepare reference table datasheet
         #
-        for ref_table_name in cls.__table_dependences:
-            db_processor = g_entity_table_2_processor_map[ref_table_name]
-            db_init_processor_name = db_processor.__name__.replace(
-                '_processor', '_init_processor')
-            db_init_processor = globals().get(db_init_processor_name)
-            if (not db_init_processor):
-                raise InitProcessorNotFoundException(ref_table_name)
-            if (db_init_processor.__init_flag):
+        for ref_table_name in cls._table_dependences:
+            if (ref_table_name == table_name):
                 continue
-            db_init_processor.initialize(
+            remote_db_init_processor = g_entity_table_2_init_processor_map[ref_table_name]
+            if (not remote_db_init_processor):
+                raise InitProcessorNotFoundException(ref_table_name)
+            if (remote_db_init_processor._init_flag):
+                continue
+            remote_db_init_processor.initialize(
                 table_2_datasheet_dict, b_db_datasheet)
 
         # get datasheet by tablename, and init entity objects
         #
-        friend_key_2_key_map = cls.__friend_key_2_key_dict
+        # get datasheet
+        friend_key_2_key_map = cls._friend_key_2_key_dict
         db_attr_2_key_map = cls._db_attr_2_key_map
         if (b_db_datasheet):
             friend_key_2_key_map = db_attr_2_key_map
-        table_name = cls.tablename()
         datasheet = table_2_datasheet_dict.get(table_name)
+        api_datasheet = []
         if (not datasheet):
             raise DbEntityInitTableDataNotFoundException(table_name)
         else:
-            # force db_attr -> API_key
-            datasheet = {friend_key_2_key_map.get(
-                friend_key, friend_key): value for friend_key, value in datasheet.items()}
-        entity_list = [db_init_processor(data) for data in datasheet]
+            # force friend_key -> API_key
+            if (cls._friend_key_2_key_dict):
+                for data in datasheet:
+                    api_datasheet.append({friend_key_2_key_map.get(
+                        friend_key, friend_key): value for friend_key, value in data.items()})
+            else:
+                api_datasheet = datasheet
+        # gen entity list
+        entity_proc_list = [cls(data) for data in api_datasheet]
+
+        # add(update) entities
+        #
         # prepare ref_table's ref_key2(fetch_key2id_dict) map
         ref_key2fetch_dict_map = {}
-        for ref_db_attr in cls._entity_relation_backref_db_attr_list:
-            ref_key = db_attr_2_key_map.get(ref_db_attr, ref_db_attr)
-            # TODO: jmj, reference table to de omitted
-            if (ref_key not in cls.__reference_key_2_fetch_target):
+        for ref_db_attr in cls._entity_relation_fk_ref_db_attr_list:
+            ref_key = cls.db_attr_2_key_map().get(ref_db_attr, ref_db_attr)
+            # TODO: jmj, auto detect reference table processor
+            if (ref_key not in cls._reference_key_2_fetch_target):
                 raise Exception(
                     "ref_key<{}> remote tablename NOT given.".format(ref_key))
             # prepare fetch parameter
-            fetch_tar = cls.__reference_key_2_fetch_target[ref_key]
+            fetch_tar = cls._reference_key_2_fetch_target[ref_key]
             fetch_key = fetch_tar.get(
                 "fetch_key", fetch_tar.get("remote_ref_key", "id"))
             remote_table_name = fetch_tar["remote_table"]
-            ref_init_processor = globals().get(remote_table_name)
+            ref_init_processor = g_entity_table_2_init_processor_map.get(
+                remote_table_name)
             if (not ref_init_processor):
                 raise InitProcessorNotFoundException(remote_table_name)
-            fetch_values = [getattr(etty, ref_key) for etty in entity_list]
+            fetch_values = [getattr(etty, ref_key)
+                            for etty in entity_proc_list]
             fetch_values = list(set(fetch_values))
             # filter & gen dict
             ref_entity_objs = ref_init_processor.get(
@@ -842,27 +894,49 @@ def base_db_init_processor(base_db_processor):
                 fetch_key2id_dict = sub_feature_dict(
                     ref_entity_objs, fetch_key, ["id"])
                 ref_key2fetch_dict_map[ref_key] = fetch_key2id_dict
-
-        # fix key(ref, autogen_attr) and add
-        for entity in entity_list:
-            # fix reference id
+        # fix keys need update
+        for entity_proc in entity_proc_list:
+            # update to remote reference id
             for ref_key in ref_key2fetch_dict_map:
-                remote_key = getattr(entity, ref_key)
+                remote_key = getattr(entity_proc, ref_key)
                 if (not remote_key):
                     continue  # ref_id is None
                 remote_key2id_dict = ref_key2fetch_dict_map[ref_key]
                 remote_id = remote_key2id_dict.get(remote_key)
-                setattr(entity, remote_id)
+                if (not remote_id):
+                    raise DBEntityRemoteReferenceNotMatchException(
+                        (table_name, ref_key, remote_key))
+                setattr(entity_proc, ref_key, remote_id)
 
-            # full local key
-            for key in cls.__autogen_attrs:
-                entity.attr_generate(key, getattr(entity, key))
+            # update auto generated local key
+            for key in cls._autogen_keys:
+                entity_proc.attr_generate(key, getattr(entity_proc, key))
 
-            cls.add(entity)
+            if (entity_proc.id is None):
+                try:
+                    rcd = entity_proc.add()
+                    if (is_data_rendered(rcd)):
+                        ret, data, msg = rcd.values()
+                        if (RET.E_ENTITY_UPDATE_UNIQUE_ERROR == ret):
+                            log.warning(msg)
+                        else:
+                            log.error(msg)
+                            raise Exception(msg)
+                except Exception as e:
+                    if (isinstance(e, EntityUpdateUniqueKeyExistsException)):
+                        pass
+                    else:
+                        raise(e)
+            else:
+                entity_proc.update()
 
+        cls._init_flag = True
         return
 
     def attr_generate(self, db_attr, *args):
+        """
+            @: Save db_attr generated value to 'self'
+        """
         db_attr = db_attr
         args = args
         return

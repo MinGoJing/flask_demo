@@ -143,7 +143,7 @@ class MsswProgram(Base):
     )
 
     id = Column(Integer, primary_key=True)
-    fk_utility_id = Column(ForeignKey('mssw_ultility.id'),
+    fk_utility_id = Column(ForeignKey('mssw_utility.id'),
                            nullable=False, index=True)
     version = Column(String(45), nullable=False)
     fk_provider_employee_id = Column(ForeignKey('employee.id'), index=True)
@@ -156,7 +156,7 @@ class MsswProgram(Base):
     fk_provider_employee = relationship(
         'Employee', primaryjoin='MsswProgram.fk_provider_employee_id == Employee.id', backref='mssw_programs')
     fk_utility = relationship(
-        'MsswUltility', primaryjoin='MsswProgram.fk_utility_id == MsswUltility.id', backref='mssw_programs')
+        'MsswUtility', primaryjoin='MsswProgram.fk_utility_id == MsswUtility.id', backref='mssw_programs')
     operator = relationship(
         'User', primaryjoin='MsswProgram.operator_id == User.id', backref='mssw_programs')
 
@@ -310,8 +310,8 @@ class MsswTaskRecordAcces(Base):
         'User', primaryjoin='MsswTaskRecordAcces.operator_id == User.id', backref='mssw_task_record_access')
 
 
-class MsswUltility(Base):
-    __tablename__ = 'mssw_ultility'
+class MsswUtility(Base):
+    __tablename__ = 'mssw_utility'
     __table_args__ = (
         Index('utility_fk_dict_sub_group_id_2_pub_dict_idx',
               'fk_dict_utility_main_group_id', 'fk_dict_utility_sub_group_id'),
@@ -331,11 +331,11 @@ class MsswUltility(Base):
     description = Column(String(200))
 
     fk_dict_utility_main_group = relationship(
-        'PubDict', primaryjoin='MsswUltility.fk_dict_utility_main_group_id == PubDict.id', backref='pubdict_mssw_ultilities')
+        'PubDict', primaryjoin='MsswUtility.fk_dict_utility_main_group_id == PubDict.id', backref='pubdict_mssw_utilities')
     fk_dict_utility_sub_group = relationship(
-        'PubDict', primaryjoin='MsswUltility.fk_dict_utility_sub_group_id == PubDict.id', backref='pubdict_mssw_ultilities_0')
+        'PubDict', primaryjoin='MsswUtility.fk_dict_utility_sub_group_id == PubDict.id', backref='pubdict_mssw_utilities_0')
     operator = relationship(
-        'User', primaryjoin='MsswUltility.operator_id == User.id', backref='mssw_ultilities')
+        'User', primaryjoin='MsswUtility.operator_id == User.id', backref='mssw_utilities')
 
 
 class PubDict(Base):

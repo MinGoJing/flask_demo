@@ -17,6 +17,7 @@
 
 
 # api resource
+from .update import db_update
 from .api.task_output import task_output_s
 from .api.task_output import task_output
 from .api.task_input import task_input_s
@@ -47,3 +48,6 @@ def init_module(api):
     api.add_resource(
         task_output, '/task_output/<task_output_id>', endpoint='task_output')
     api.add_resource(task_output_s, '/task_outputs', endpoint='task_outputs')
+
+
+db_update()

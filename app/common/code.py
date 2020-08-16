@@ -124,8 +124,10 @@ class RET(object):
 
     E_ENTITY_UPDATE_UNIQUE_ERROR = \
         (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x400, 0x01))
-    E_UPDATE_ENTITY_NOT_FOUND = \
+    E_ENTITY_NOT_FOUND = \
         (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x400, 0x02))
+    E_ENTITY_REFERENCE_KEY_ERROR = \
+        (FAIL_CODE(PLF_LAYER, MODULE_ORM, 0x400, 0x03))
 
     S_DELETE_ENTITY_NOT_FOUND = \
         (SUCCESS_CODE(PLF_LAYER, MODULE_ORM, 0x200, 0x01))
@@ -202,9 +204,12 @@ class RET(object):
         E_ENTITY_UPDATE_UNIQUE_ERROR: {
             "en": "E_ENTITY_UPDATE_UNIQUE_ERROR",
             "zh-cn": "数据库表对象更新唯一性校验失败"},
-        E_UPDATE_ENTITY_NOT_FOUND: {
-            "en": "E_UPDATE_ENTITY_NOT_FOUND",
-            "zh-cn": "对象更新失败，ID无效"},
+        E_ENTITY_NOT_FOUND: {
+            "en": "E_ENTITY_NOT_FOUND",
+            "zh-cn": "数据库对象未找到，ID无效"},
+        E_ENTITY_REFERENCE_KEY_ERROR: {
+            "en": "E_ENTITY_REFERENCE_KEY_ERROR",
+            "zh-cn": "数据库对象引用未找到，关联字段未匹配"},
 
         S_DELETE_ENTITY_NOT_FOUND: {
             "en": "S_DELETE_ENTITY_NOT_FOUND",
@@ -222,7 +227,7 @@ class RET(object):
         # API REQ
         #
         E_REQUEST_BAD_PARAMETER: {
-            "en": "E_ENTITY_UPDATE_UNIQUE_ERROR",
+            "en": "E_REQUEST_BAD_PARAMETER",
             "zh-cn": "Request请求参数有误"},
 
         None: {

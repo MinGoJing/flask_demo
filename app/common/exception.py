@@ -183,13 +183,13 @@ class EntityBackrefAttributeNotFoundException(APIException):
     msg = ('entity <{}> backref attribute <{}> NOT found.')
 
 
-class UpdateEntityNotFoundException(APIException):
+class EntityNotFoundException(APIException):
     """
     @data : (str, int)
-        @str : entity_tale_name
+        @str : tale_name
         @int : entity_id
     """
-    result_code = RET.E_UPDATE_ENTITY_NOT_FOUND
+    result_code = RET.E_ENTITY_NOT_FOUND
     msg = ('Entity <{} id:{}> NOT FOUND, update failed.')
 
 
@@ -219,3 +219,14 @@ class DbEntityInitTableDataNotFoundException(APIException):
     """
     result_code = RET.E_INIT_PROCESSOR_TABLE_DATA_NOT_FOUND
     msg = ('Db init, table<{}> datasheet NOT found.')
+
+
+class DBEntityRemoteReferenceNotMatchException(APIException):
+    """
+    @data : str1, str2, str3
+        @str1: local table name
+        @str2: reference key
+        @str3: value
+    """
+    result_code = RET.E_ENTITY_REFERENCE_KEY_ERROR
+    msg = ('Entity<{}> reference key<{}> value<{}>, did NOT found remote entity to match.')

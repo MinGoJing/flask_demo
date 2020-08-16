@@ -20,6 +20,10 @@ from os import path
 from app import PROJ_HOME_PATH
 
 # export
+from .user import *
+from .employee import *
+from .department import *
+from .company import *
 from .pub_dict import *
 from .utility import *
 from .program import *
@@ -31,5 +35,7 @@ g_init_done = False
 if (not g_init_done):
     from app.common import init_db_processors
     CUR_FOLDER_PATH = path.dirname(path.abspath(__file__))
-    init_db_processors(CUR_FOLDER_PATH, "app.mssweb.dao")
+    init_db_processors(CUR_FOLDER_PATH, "app.mssweb.dao",
+                       init_submod_list=["utility", "pub_dict", "user",
+                                         "employee", "department", "company"])
     g_init_done = True

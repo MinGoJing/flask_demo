@@ -1,0 +1,39 @@
+company:
+    - name: 明戈软件
+      number: MGT
+department:
+    - name: 市场
+      number: market
+      fk_company_id: 明戈软件
+employee:
+    - name: xxx
+      number: MGTLTD0001
+      fk_department_id: 市场
+user:
+    - name: admin
+      fk_employee_id: MGTLTD0001
+pub_dict:
+    - name: property
+      category: MajorType
+    - name: property2
+      category: MajorType
+    - name: single_chain
+      category: SubType
+    - name: multi_chain
+      category: SubType
+mssw_utility:
+    - name: EC
+      display_name: "EC utility"
+      utility_main_group_id: property
+      utility_sub_group_id: single_chain
+      description: "Ec desc"
+    - name: EC2
+      display_name: "EC2 utility"
+      utility_main_group_id: property2
+      utility_sub_group_id: multi_chain
+      description: "Ec2 desc"
+    - name: Last
+      display_name: "Last display"
+      utility_main_group_id: property
+      utility_sub_group_id: single_chain
+      description: "Last desc"

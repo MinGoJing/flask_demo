@@ -19,6 +19,7 @@
 from .db import *
 from .code import *
 from .exception import *
+from .func import *
 
 
 def init_module(api):

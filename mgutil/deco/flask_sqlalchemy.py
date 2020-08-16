@@ -19,6 +19,7 @@ from werkzeug.exceptions import HTTPException
 
 # flask
 from flask import abort
+from flask import request
 from flask import make_response
 from sqlalchemy.exc import DBAPIError
 
@@ -43,25 +44,50 @@ def transaction(session):
                 if (session.is_active):
                     session.rollback()
 
-                if (isinstance(e, HTTPException)):
-                    resp = e.get_response()
-                    abort(resp)
-                elif (isinstance(e, DBAPIError)):
-                    if (hasattr(e, "orig") and 2 <= len(e.orig.args)):
-                        e_args = e.orig.args
-                        code = -(e_args[0])
-                        msg = e_args[1]
-                        return {"code": code, "data": 0, "msg": msg}
+                b_request_bounded = None
+                try:
+                    str(request)
+                    b_request_bounded = True
+                except Exception as ee:
+                    ee = ee
+                    b_request_bounded = False
+
+                if (b_request_bounded):
+                    if (isinstance(e, HTTPException)):
+                        resp = e.get_response()
+                        abort(resp)
+                    elif (isinstance(e, DBAPIError)):
+                        if (hasattr(e, "orig") and 2 <= len(e.orig.args)):
+                            e_args = e.orig.args
+                            code = -(e_args[0])
+                            msg = e_args[1]
+                            return {"code": code, "data": 0, "msg": msg}
+                        else:
+                            code = e.code
+                            msg = str(e)
+                        resp = make_response({"code": code, "data": 0, "msg": msg}, 500,
+                                             {"Content-Type": "application/json"})
+                        abort(resp)
                     else:
-                        code = e.code
-                        msg = str(e)
-                    resp = make_response({"code": code, "data": 0, "msg": msg}, 500,
-                                         {"Content-Type": "application/json"})
-                    abort(resp)
-                else:
-                    resp = make_response({"code": -1, "data": 0, "msg": str(e)}, 500,
-                                         {"Content-Type": "application/json"})
-                    abort(resp)
+                        resp = make_response({"code": -1, "data": 0, "msg": str(e)}, 500,
+                                             {"Content-Type": "application/json"})
+                        abort(resp)
+                else:  # not request bounded
+                    if (isinstance(e, HTTPException)):
+                        if (hasattr(e, "result_code")):
+                            return {"code": e.result_code, "data": 0, "msg": e.msg}
+                    elif (isinstance(e, DBAPIError)):
+                        if (hasattr(e, "orig") and 2 <= len(e.orig.args)):
+                            e_args = e.orig.args
+                            code = -(e_args[0])
+                            msg = e_args[1]
+                        else:
+                            code = e.code
+                            msg = str(e)
+
+                        return {"code": e.code, "data": 0, "msg": msg}
+                    else:
+                        return {"code": e.code, "data": 0, "msg": e.description}
 
                 raise (e)
 
