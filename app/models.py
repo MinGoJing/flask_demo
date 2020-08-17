@@ -340,6 +340,9 @@ class MsswUtility(Base):
 
 class PubDict(Base):
     __tablename__ = 'pub_dict'
+    __table_args__ = (
+        Index('index', 'name', 'category'),
+    )
 
     id = Column(Integer, primary_key=True)
     name = Column(String(45), nullable=False)

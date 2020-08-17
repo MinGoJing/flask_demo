@@ -612,6 +612,8 @@ def init_processor(db_processor, processor_map=g_entity_table_2_processor_map):
                 uq_user_keys.append(attr2key_map.get(db_attr, db_attr))
     if (1 == len(uq_user_keys)):
         db_processor._unique_user_key_list = uq_user_keys
+    elif (db_processor._unique_user_key_list):
+        pass
     elif (hasattr(entity_cls, "__table_args__")):
         uq_user_keys = []
         for arg in entity_cls.__table_args__:
@@ -619,9 +621,9 @@ def init_processor(db_processor, processor_map=g_entity_table_2_processor_map):
                 for col in arg.columns:
                     uq_user_keys.append(attr2key_map.get(col.key, col.key))
             break
+        log.warning("Auto detected processor<{}> unique keys<{}>".format(
+            entity_cls.__tablename__, str(uq_user_keys)))
         db_processor._unique_user_key_list = uq_user_keys
-    elif (not db_processor._unique_user_key_list):
-        db_processor._unique_user_key_list = []
 
     return
 
@@ -921,7 +923,8 @@ class base_db_init_processor(base_db_processor):
                         for key in cls._unique_user_key_list:
                             fetch_p[key] = entity_proc.attr(key)
                         if (cls.fetch(fetch_p)):
-                            log.info("%s exists." % (str(entity_proc)))
+                            log.info("\n    >>--> "
+                                     "%s exists." % (str(entity_proc)))
                             continue
 
                     rcd = entity_proc.add()
