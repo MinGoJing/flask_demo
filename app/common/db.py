@@ -914,6 +914,16 @@ class base_db_init_processor(base_db_processor):
 
             if (entity_proc.id is None):
                 try:
+                    # auto generate key(s) never repeat
+                    if (not (set(cls._unique_user_key_list) & set(cls._autogen_keys))):
+                        #
+                        fetch_p = {}
+                        for key in cls._unique_user_key_list:
+                            fetch_p[key] = entity_proc.attr(key)
+                        if (cls.fetch(fetch_p)):
+                            log.info("%s exists." % (str(entity_proc)))
+                            continue
+
                     rcd = entity_proc.add()
                     if (is_data_rendered(rcd)):
                         ret, data, msg = rcd.values()

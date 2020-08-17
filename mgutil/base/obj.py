@@ -306,6 +306,12 @@ class mgt_c_object(object):
                     and attr not in self._exclude_attr_list
                     )]
 
+    def attr(self, key):
+        return getattr(self, key)
+
+    def get(self, key):
+        return getattr(self, key, None)
+
     @classmethod
     def db_attr_2_key_map(cls, entity_instance):
         table_name = entity_instance.__class__.__tablename__
@@ -474,6 +480,30 @@ class mgt_c_object(object):
                     return False
 
             return True
+
+    def __str__(self):
+        attr_list = self.attrs
+        fmt_values = []
+
+        if (hasattr(self, "_entity_cls")):
+            unique_key_list = getattr(self, "_unique_user_key_list", None)
+            if (unique_key_list):
+                attr_list = unique_key_list
+            fmt_str = "Entity<{} :: {}>"
+            if (self.entity_cls):
+                fmt_values.append(self.__class__.tablename())
+            else:
+                fmt_values.append(str(self.__class__))
+        else:
+            pass
+
+        attr_str = ""
+        for key in attr_list:
+            attr_str = "%s, %s:%s" % (
+                attr_str, key, self.__dict__[key])
+        fmt_values.append(attr_str[2:] if (2 < len(attr_str)) else attr_str)
+
+        return fmt_str.format(*fmt_values)
 
 
 def attr_list(cls, include_attrs=[], exclude_attrs=[],

@@ -32,7 +32,7 @@ def _init_round_1(yml_path):
     try:
         utility_init_processor.initialize(datasheet)
     except Exception as e:
-        print(e)
+        e = e
 
 
 def db_update():
