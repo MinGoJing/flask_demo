@@ -7,7 +7,7 @@
 @Author  :   MinGo
 @Contact :   mingo_jing@163.com
 @License :   (C)Copyright since 2020, MinGo
-@History :   
+@History :
     1.0: 2020/07/11 19:30, MinGo
           1. Created.
 
@@ -16,12 +16,12 @@
 # py
 
 # common
-from app.models import MsswUtility
 from app.common.db import base_db_update_processor
 from app.common.db import base_db_init_processor
 
 # model
-from app.models import MsswUtility, PubDict
+from app.models import PubDict
+from app.models import MsswUtility
 
 # export
 __all__ = [

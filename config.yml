@@ -24,7 +24,7 @@ DB:
         SQLALCHEMY_DATABASE_URI: ${DIALECT}+${DRIVER}://${USER}:${PASSWORD}@${HOST}:${PORT}/${DB}?charset=utf8
         DEBUG_SQLALCHEMY_DATABASE_URI: ${DIALECT}+${DRIVER}://${DEBUG_USER}:${DEBUG_PASSWORD}@${DEBUG_HOST}:${DEBUG_PORT}/${DEBUG_DB}?charset=utf8
         SQLALCHEMY_TRACK_MODIFICATIONS: False
-        SQLALCHEMY_ECHO: True
+        SQLALCHEMY_ECHO: False
 
 LOGGER:
     version: 1
@@ -65,12 +65,12 @@ LOGGER:
     loggers:
         SYS:
             level: INFO
-            handlers: ["sys_file", "console"]
+            handlers: ["sys_file"]
 
         MSS:
             level: INFO
-            handlers: ["mss_file", "console"]
+            handlers: ["mss_file"]
 
         UTIL:
             level: INFO
-            handlers: ["mss_file", "console"]
+            handlers: ["mss_file"]

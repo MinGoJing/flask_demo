@@ -38,4 +38,4 @@ def _init_round_1(yml_path):
 def db_update():
     cur_path = path.dirname(path.abspath(__file__))
     if (datetime.now() <= datetime.strptime("2020-08-31", "%Y-%m-%d")):
-        b_ret = _init_round_1(path.join(cur_path, "init_2020-08-13.yml"))
+        _init_round_1(path.join(cur_path, "init_2020-08-13.yml"))
