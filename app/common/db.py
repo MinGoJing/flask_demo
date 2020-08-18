@@ -610,10 +610,10 @@ def init_processor(db_processor, processor_map=g_entity_table_2_processor_map):
         if (hasattr(col, "comparator") and hasattr(col.comparator, "unique")):
             if (col.comparator.unique):
                 uq_user_keys.append(attr2key_map.get(db_attr, db_attr))
-    if (1 == len(uq_user_keys)):
-        db_processor._unique_user_key_list = uq_user_keys
-    elif (db_processor._unique_user_key_list):
+    if (db_processor._unique_user_key_list):
         pass
+    elif (1 == len(uq_user_keys)):
+        db_processor._unique_user_key_list = uq_user_keys
     elif (hasattr(entity_cls, "__table_args__")):
         uq_user_keys = []
         for arg in entity_cls.__table_args__:
@@ -924,7 +924,7 @@ class base_db_init_processor(base_db_processor):
                             fetch_p[key] = entity_proc.attr(key)
                         if (cls.fetch(fetch_p)):
                             log.info("\n    >>--> "
-                                     "%s exists." % (str(entity_proc)))
+                                     "%s EXISTS." % (str(entity_proc)))
                             continue
 
                     rcd = entity_proc.add()
