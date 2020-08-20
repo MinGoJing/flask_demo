@@ -76,11 +76,8 @@ class pub_dict(Resource):
     @transaction(session=sss)
     def put(self, dict_id):
         params = dict_put_par.parse_args()
-        dict_db_proc = pub_dict_processor(params)
-        ret = dict_db_proc.update(unique_keys=["name", "category"])
-        if (isinstance(ret, dict)):
-            ret["data"] = 0
-        return render_data(ret)
+        rcd = pub_dict_processor.update(dict_id, params)
+        return render_data(rcd)
 
     @marshal_with(int_record_fields)
     @transaction(session=sss)

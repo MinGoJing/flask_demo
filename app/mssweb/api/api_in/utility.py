@@ -49,9 +49,6 @@ utility_add_par.add_argument('description',
                              help='Note.')
 # put
 utility_put_par = utility_add_par.copy()
-utility_put_par.add_argument('id',
-                             type=int, required=True,
-                             help='ID. (Required)')
 utility_put_par.replace_argument('name',
                                  type=str,
                                  help='Enum name.')

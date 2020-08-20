@@ -49,9 +49,6 @@ dict_add_par.add_argument("note",
                           help="Enum note.")
 # put
 dict_put_par = dict_add_par.copy()
-dict_put_par.add_argument("id",
-                          type=int, required=True,
-                          help="Enum ID. (Required)")
 dict_put_par.replace_argument("category",
                               type=str,
                               help="Name of a group of Enum values.")

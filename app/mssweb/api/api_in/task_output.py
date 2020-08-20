@@ -58,10 +58,6 @@ task_output_add_par.add_argument('value',
 
 # put
 task_output_put_par = RequestParser()
-task_output_put_par.add_argument('id',
-                                 type=int, required=True,
-                                 location=['args'],
-                                 help='Task ID. (Required)')
 task_output_put_par.add_argument('value',
                                  type=int, required=True,
                                  location=['form'],
