@@ -39,9 +39,9 @@ def is_string(obj):
         return True
 
 
-def str2codec(src_str, codec):
+def str2codec(src_str, encoding="utf-8"):
     # args
-    if (not is_string(src_str)):
+    if (not is_string(src_str) and not isinstance(src_str, bytes)):
         return False, src_str
     if (0 == len(src_str)):
         return True, src_str
@@ -50,7 +50,7 @@ def str2codec(src_str, codec):
     str_codec = ""
     # unicode, encode direct
     if (type(u"") == type(src_str)):
-        src_str = src_str.encode(codec)
+        src_str = src_str.encode(encoding)
         return True, src_str
 
     # init
@@ -60,17 +60,29 @@ def str2codec(src_str, codec):
     codec_obj = u.result
     str_codec = codec_obj["encoding"]
     # equal
-    if (str_codec == codec):
+    if (str_codec == encoding):
         return True, src_str
 
     # try codec
     try:
-        if ("Windows-1252" == str_codec or str_codec.starswith("ISO-8859-1")):
-            pass
+        if (isinstance(src_str, bytes)):
+            str_str = str(src_str, encoding=str_codec)
+            str_str = src_str.decode(str_codec).encode(encoding)
+        elif ("Windows-1252" == str_codec or str_codec.starswith("ISO-8859-1")):
             # str_str = src_str.replace("，", ",")
+            str_str = src_str
+            pass
         else:
-            str_str = src_str.decode(str_codec).encode(codec)
+            str_str = src_str.decode(str_codec).encode(encoding)
     except Exception as e:
         log.error(str(e))
         return False, str_str
     return True, str_str
+
+
+if ("__main__" == __name__):
+    byte_str = b'universal'
+    uni_str = u"unicode"
+
+    str_utf8 = str2codec(byte_str, "utf-8")
+    str_utf8_2 = str2codec(uni_str, "utf-8")
