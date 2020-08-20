@@ -312,6 +312,9 @@ class mgt_c_object(object):
     def get(self, key):
         return getattr(self, key, None)
 
+    def items(self):
+        return self.to_json().items()
+
     @classmethod
     def db_attr_2_key_map(cls, entity_instance):
         table_name = entity_instance.__class__.__tablename__

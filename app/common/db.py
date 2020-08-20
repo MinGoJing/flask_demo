@@ -441,7 +441,7 @@ class base_db_processor(mgt_c_object):
         if (unique_keys):
             fetch_params = {"id": {"op": "ne", "value": entity_id}}
             for key in unique_keys:
-                fetch_params[key] = update_dict.get[key]
+                fetch_params[key] = update_dict.get(key)
             fetch_obj = cls.fetch(fetch_params, session=session)
             if (fetch_obj):
                 unique_identifier = ""
@@ -468,6 +468,9 @@ class base_db_processor(mgt_c_object):
 
         #
         for key, value in update_dict.items():
+            if (key in cls._entity_relation_backref_db_attr_list):
+                continue
+
             db_attr = key2db_attr_map.get(key, key)
             try:
                 setattr(entity_obj, db_attr, value)
@@ -923,8 +926,8 @@ class base_db_init_processor(base_db_processor):
                         for key in cls._unique_user_key_list:
                             fetch_p[key] = entity_proc.attr(key)
                         if (cls.fetch(fetch_p)):
-                            log.info("\n    >>--> "
-                                     "%s EXISTS." % (str(entity_proc)))
+                            log.info("\n    >>--> [EXISTS] "
+                                     "%s ." % (str(entity_proc)))
                             continue
 
                     rcd = entity_proc.add()
@@ -941,7 +944,7 @@ class base_db_init_processor(base_db_processor):
                     else:
                         raise(e)
             else:
-                entity_proc.update()
+                cls.update(entity_proc.id, entity_proc)
 
         cls._init_flag = True
         return
