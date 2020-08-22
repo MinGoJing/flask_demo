@@ -16,6 +16,8 @@
 # py
 
 # export
+from .slash import SLASH
 from .obj import mgt_c_object
 from .obj import *
 from .func import *
+from .string import *

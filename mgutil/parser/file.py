@@ -14,7 +14,6 @@
 '''
 
 # py
-import shutil
 import os
 import re
 import logging
@@ -22,6 +21,12 @@ import logging
 
 # globals
 log = logging.getLogger("SYS")
+
+__all__ = [
+    "mgf_match_ls_sub_names",
+    "file_basename_without_suffix",
+    "file_basename_first_part"
+]
 
 
 # Desc  : get ls results matches “match_exp” in directory [tar_dir]
@@ -87,3 +92,30 @@ def mgf_match_ls_sub_names(tar_dir, match_exp=None, is_path_relative=True,
         os.chdir(mPreCwd)
 
     return retNameList
+
+
+def file_basename_without_suffix(file_path):
+    file_base_name = os.path.basename(file_path)
+
+    if (re.search(".", file_base_name)):
+        tmp_name = file_base_name[::-1]
+        idx = tmp_name.index(".")
+        file_base_name = file_base_name[:0 - idx - 1]
+
+    return file_base_name
+
+
+def file_basename_first_part(file_path):
+    file_base_name = os.path.basename(file_path)
+    if (len(file_base_name) == file_base_name.count(".")):
+        return ""
+
+    while ("." == file_base_name[0]):
+        file_base_name = file_base_name[1:]
+
+    return file_base_name.split(".")[0]
+
+
+def json_file_parse(file_path, encoding="utf-8"):
+    if (not os.path.exists(file_path)):
+        return False,

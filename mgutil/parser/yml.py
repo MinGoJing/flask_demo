@@ -29,7 +29,7 @@ __all__ = ["mgt_c_yaml_object"]
 
 class mgt_c_yaml_object(mgt_c_object):
 
-    def __init__(self, json_cfg):
+    def __init__(self, json_cfg, file_encoding='utf-8'):
         config_json = {}
         if (isinstance(json_cfg, dict)):
             config_json = json_cfg
@@ -39,7 +39,7 @@ class mgt_c_yaml_object(mgt_c_object):
                     "json config file[%s] NOT exists on local disk." % json_cfg)
                 return
             else:
-                f_obj = open(json_cfg)
+                f_obj = open(json_cfg, encoding=file_encoding)
                 config_json = yaml.load(f_obj)
 
         update_reference_4_json(config_json)

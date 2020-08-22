@@ -33,6 +33,7 @@ log = logging.getLogger('UTIL')
 # export
 __all__ = [
     "SLASH",
+    "is_data_rendered",
     "sub_feature_filter",
     "sub_feature_dict",
     "sub_feature_marshal"
@@ -46,6 +47,13 @@ if (SLASH is None):
         SLASH = "\\"
     else:
         SLASH = "/"
+
+
+def is_data_rendered(data, render_keys=["code", "data", "msg"]):
+    if (isinstance(data, dict)):
+        if (3 == len(set(render_keys) & set(data.keys()))):
+            return True
+    return False
 
 
 def sub_feature_dict(targets, idx_key, tar_key_path=[], b_strict=True,

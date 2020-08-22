@@ -15,9 +15,10 @@
 
 # py
 
+# mguitl
+from mgutil.base.func import is_data_rendered
 
-def is_data_rendered(data):
-    if (isinstance(data, dict)):
-        if (3 == len(set(["code", "data", "msg"]) & set(data.keys()))):
-            return True
-    return False
+
+__all__ = [
+    "is_data_rendered"
+]

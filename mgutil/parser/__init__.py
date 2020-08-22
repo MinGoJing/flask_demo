@@ -14,4 +14,6 @@
 '''
 
 # py
+from .file import *
+from .xls import *
 from .yml import *
