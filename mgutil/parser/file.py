@@ -16,6 +16,7 @@
 # py
 import os
 import re
+import json
 import logging
 
 
@@ -118,4 +119,13 @@ def file_basename_first_part(file_path):
 
 def json_file_parse(file_path, encoding="utf-8"):
     if (not os.path.exists(file_path)):
-        return False,
+        return {}
+
+    json_obj = {}
+    try:
+        f_obj = open(file_path, encoding=encoding)
+        json_obj = json.load(f_obj)
+    except Exception as e:
+        e = e
+
+    return json_obj
