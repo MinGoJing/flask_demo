@@ -142,7 +142,7 @@ class mgt_c_object(object):
         if (self._default_value_map is None):
             self._default_value_map = {}
 
-        if (not input_obj or (not isinstance(input_obj, (dict, FlaskForm))
+        if (not input_obj or (not isinstance(input_obj, (dict, FlaskForm, mgt_c_object))
                               and not is_db_entity(input_obj))):
             return
         elif (isinstance(input_obj, FlaskForm)):
@@ -172,6 +172,8 @@ class mgt_c_object(object):
             self._local_model_init(input_obj, b_reserve)
         elif (isinstance(input_obj, FlaskForm)):
             self._local_form_init(input_obj, b_reserve)
+        elif (isinstance(input_obj, mgt_c_object)):
+            self._local_json_init(input_obj.to_json(), b_reserve)
 
     def _local_json_init(self, json_obj, b_reserve):
         if (not self._support_attr_list):
@@ -235,7 +237,7 @@ class mgt_c_object(object):
                         self._include_attr_list.append(key)
 
     def _local_setattr(self, key, value, b_reserve=False):
-        if (not b_reserve or (not isinstance(value, (dict, list, tuple, FlaskForm))
+        if (not b_reserve or (not isinstance(value, (list, tuple, dict, FlaskForm))
                               and not is_db_entity(value))):
             setattr(self, key, value)
         elif (isinstance(value, (dict, FlaskForm)) or is_db_entity(value)):
@@ -255,7 +257,7 @@ class mgt_c_object(object):
 
         v_list = []
         for v in value_list:
-            if (not isinstance(v, (dict, list, tuple, FlaskForm))
+            if (not isinstance(v, (list, tuple, dict, FlaskForm))
                     and not is_db_entity(v)):
                 v_list.append(v)
             elif (isinstance(v, (dict, FlaskForm)) or is_db_entity(v)):

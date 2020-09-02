@@ -19,6 +19,9 @@ import re
 import json
 import logging
 
+# local
+from .. base import SLASH
+
 
 # globals
 log = logging.getLogger("SYS")
@@ -46,8 +49,6 @@ __all__ = [
 #   1. (list[str]): ls results
 def mgf_match_ls_sub_names(tar_dir, match_exp=None, is_path_relative=True,
                            match_opt=0):
-    from app import conf
-
     if (not os.path.isdir(tar_dir)):
         log.error("["+tar_dir+"] is NOT a directory.")
         return []
@@ -65,23 +66,23 @@ def mgf_match_ls_sub_names(tar_dir, match_exp=None, is_path_relative=True,
     elif (1 == match_opt):
         if (match_exp is not None):
             for item in contends:
-                if (os.path.isdir(tar_dir+conf.SLASH+item)):
+                if (os.path.isdir(tar_dir+SLASH+item)):
                     if (re.match(match_exp, item) is not None):
                         retNameList.append(item)
         else:
             for item in contends:
-                if (os.path.isdir(tar_dir+conf.SLASH+item)):
+                if (os.path.isdir(tar_dir+SLASH+item)):
                     retNameList.append(item)
 
     elif (2 == match_opt):
         if (match_exp is not None):
             for item in contends:
-                if (os.path.isfile(tar_dir+conf.SLASH+item)):
+                if (os.path.isfile(tar_dir+SLASH+item)):
                     if (re.match(match_exp, item) is not None):
                         retNameList.append(item)
         else:
             for item in contends:
-                if (os.path.isfile(tar_dir+conf.SLASH+item)):
+                if (os.path.isfile(tar_dir+SLASH+item)):
                     retNameList.append(item)
 
     if (not is_path_relative):

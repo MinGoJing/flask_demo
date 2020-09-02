@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "/Users/mingo/apps/miniconda3/bin/python"
+    "python.pythonPath": "/Users/mingo/apps/miniconda3/bin/python",
+    "python.envFile": "${workspaceFolder}/.vscode/.env"
 }

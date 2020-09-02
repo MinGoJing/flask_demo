@@ -115,3 +115,28 @@ class SubFeatureMarshalTargetAttributeLostException(UtilBaseException):
         @any : source match key value
     """
     msg = ('Sub feature marshal source key<{}> value<{}>, lost target attribute')
+
+
+class XlsxWriteNotSupportedException(UtilBaseException):
+    """
+    @data : str
+        @str : filepath
+    """
+    msg = ('Xlsx File<{}> Write NOT supported yet')
+
+
+class FolderCreateException(UtilBaseException):
+    """
+    @data : str
+        @str : Create folder path
+    """
+    msg = ('Folder<{}> create failed.')
+
+
+class Str2CodecException(UtilBaseException):
+    """
+    @data : str1, str2
+        @str1 : str
+        @str2 : codec str
+    """
+    msg = ('String<{}> to codec<{}> failed.')
