@@ -33,6 +33,7 @@ def transaction(session):
         def sub_trans_wrapper(*args, **kwargs):
             try:
                 session.begin(subtransactions=True)
+                # use same session throughout the transaction
                 if ("session" in kwargs):
                     kwargs["session"] = session
                 ret = func(*args, **kwargs)

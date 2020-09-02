@@ -33,7 +33,7 @@ log = logging.getLogger('UTIL')
 # export
 __all__ = [
     "SLASH",
-    "is_data_rendered",
+    "is_process_failed",
     "sub_feature_filter",
     "sub_feature_dict",
     "sub_feature_marshal"
@@ -49,7 +49,7 @@ if (SLASH is None):
         SLASH = "/"
 
 
-def is_data_rendered(data, render_keys=["code", "data", "msg"]):
+def is_process_failed(data, render_keys=["code", "data", "msg"]):
     if (isinstance(data, dict)):
         if (3 == len(set(render_keys) & set(data.keys()))):
             return True

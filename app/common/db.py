@@ -36,7 +36,7 @@ from mgutil.deco import transaction
 from mgutil.file import mgf_match_ls_sub_names
 
 # local
-from .func import is_data_rendered
+from .func import is_process_failed
 from .code import RET
 from .exception import QueryMapFormatException
 from .exception import QueryJoinRuleLengthNotSupportException
@@ -951,7 +951,7 @@ class base_db_init_processor(base_db_processor):
                             continue
 
                     rcd = entity_proc.add()
-                    if (is_data_rendered(rcd)):
+                    if (is_process_failed(rcd)):
                         ret, data, msg = rcd.values()
                         if (RET.E_ENTITY_UPDATE_UNIQUE_ERROR == ret):
                             log.warning(msg)

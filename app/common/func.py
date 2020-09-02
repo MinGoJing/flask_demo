@@ -16,9 +16,9 @@
 # py
 
 # mguitl
-from mgutil.base.func import is_data_rendered
+from mgutil.base.func import is_process_failed
 
 
 __all__ = [
-    "is_data_rendered"
+    "is_process_failed"
 ]
