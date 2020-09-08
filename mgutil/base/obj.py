@@ -184,8 +184,9 @@ class mgt_c_object(object):
                     self._include_attr_list.append(key)
         else:
             # handle supported attributes
+            local_attrs = self.attrs
             for key, value in json_obj.items():
-                if (key in list(self._support_attr_list)):
+                if (key in local_attrs):
                     self._local_setattr(key, value, b_reserve)
                     if ("_" == key[:1]):
                         self._include_attr_list.append(key)
@@ -205,12 +206,13 @@ class mgt_c_object(object):
                     self._include_attr_list.append(key)
         else:
             # handle supported attributes
+            local_attrs = self.attrs
             for attr in vars(model_obj):
                 key = attr2key_map.get(attr, attr)
                 if key in self._exclude_attr_list:
                     continue
                 value = getattr(model_obj, attr)
-                if (key in list(self._support_attr_list)):
+                if (key in local_attrs):
                     self._local_setattr(key, value, b_reserve)
                     if ("_" == key[:1]):
                         self._include_attr_list.append(key)
@@ -227,11 +229,12 @@ class mgt_c_object(object):
                     self._include_attr_list.append(key)
         else:
             # handle supported attributes
+            local_attrs = self.attrs
             for key in vars(form_obj):
                 if key in self._exclude_attr_list:
                     continue
                 value = getattr(form_obj, key)
-                if (key in list(self._support_attr_list)):
+                if (key in local_attrs):
                     self._local_setattr(key, value, b_reserve)
                     if ("_" == key[:1]):
                         self._include_attr_list.append(key)
@@ -301,10 +304,11 @@ class mgt_c_object(object):
     @property
     def attrs(self):
         if (self._support_attr_list):
-            return self._support_attr_list
+            return list(set(self._support_attr_list) | set(self.__class__._user_support_attr_list))
 
         return [attr for attr in vars(self)
-                if (("_" != attr[:1] or attr in self._include_attr_list)
+                if (("_" != attr[:1] or attr in
+                     list(set(self._include_attr_list) | set(self.__class__._user_support_attr_list)))
                     and attr not in self._exclude_attr_list
                     )]
 
@@ -343,30 +347,39 @@ class mgt_c_object(object):
         # key_list = []
         # if ()
 
-    def set_support_attrs(self, usr_sup_attrs=[]):
-        if (not usr_sup_attrs):
+    @classmethod
+    def set_user_attrs(cls, usr_attr_map={}):
+        if (not usr_attr_map):
             return False
 
-        ex_usr_sup_attrs = list(set(usr_sup_attrs) -
-                                set(self._support_attr_list))
+        if (cls._support_attr_list is None):
+            cls._support_attr_list = []
+        if (cls._user_support_attr_list is None):
+            cls._user_support_attr_list = []
+        if (cls._default_value_map is None):
+            cls._default_value_map = []
+
+        ex_usr_sup_attrs = list(set(usr_attr_map.keys()) -
+                                set(cls._support_attr_list))
         if (ex_usr_sup_attrs):
-            self._support_attr_list += ex_usr_sup_attrs
-            self._user_support_attr_list += ex_usr_sup_attrs
+            cls._support_attr_list += ex_usr_sup_attrs
+            cls._user_support_attr_list += ex_usr_sup_attrs
 
             # init new attr values
             for attr in ex_usr_sup_attrs:
-                setattr(self, attr, None)
+                setattr(cls, attr, None)
 
         return True
 
-    def reset_support_attrs(self):
-        if (self._user_support_attr_list):
-            ex_usr_sup_attrs = list(set(self._user_support_attr_list) &
-                                    set(self._support_attr_list))
+    @classmethod
+    def reset_user_attrs(cls):
+        if (cls._user_support_attr_list):
+            ex_usr_sup_attrs = list(set(cls._user_support_attr_list) &
+                                    set(cls._support_attr_list))
             if (ex_usr_sup_attrs):
-                self._support_attr_list = list(set(self._support_attr_list) -
-                                               set(ex_usr_sup_attrs))
-                self._user_support_attr_list = []
+                cls._support_attr_list = list(set(cls._support_attr_list) -
+                                              set(ex_usr_sup_attrs))
+                cls._user_support_attr_list = []
 
             # do NOT initialize reset attrs' value
             # we may need them later
@@ -381,13 +394,7 @@ class mgt_c_object(object):
         else:
             local_attrs = self.attrs
             for attr in vars(self):
-                if (self._support_attr_list):
-                    for attr in self._support_attr_list:
-                        j[attr] = self._local_json_parse(attr)
-
-                else:
-                    if (attr not in local_attrs):
-                        continue
+                if (attr in local_attrs):
                     j[attr] = self._local_json_parse(attr)
         return j
 

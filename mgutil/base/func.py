@@ -232,7 +232,8 @@ def _dict_list_single_key_filter(list_to_filter: list, key,
 
     if (b_strict):
         fetch_list = [item[key] for item in handel_list]
-    fetch_list = [item[key] for item in handel_list if (key in item)]
+    else:
+        fetch_list = [item[key] for item in handel_list if (key in item)]
 
     if (b_list_expend):
         while (isinstance(fetch_list[0], (list, tuple))):

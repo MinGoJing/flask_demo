@@ -24,29 +24,25 @@ from flask_restful import fields
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import joinedload
 
-# app
-from app import db
-
 # mgutil
+from mgutil.deco import transaction
+from mgutil.file import mgf_match_ls_sub_names
 from mgutil.base import mgt_c_object
 from mgutil.base import sub_feature_dict
 from mgutil.base import g_exclude_attrs_from_db_model
 from mgutil.base import attr_list
-from mgutil.deco import transaction
-from mgutil.file import mgf_match_ls_sub_names
-
-# local
-from .func import is_process_failed
-from .code import RET
-from .exception import QueryMapFormatException
-from .exception import QueryJoinRuleLengthNotSupportException
-from .exception import EntityUpdateUniqueKeyExistsException
-from .exception import EntityAutoJoinFailedException
-from .exception import EntityBackrefAttributeNotFoundException
-from .exception import EntityNotFoundException
-from .exception import DbEntityInitTableDataNotFoundException
-from .exception import InitProcessorNotFoundException
-from .exception import DBEntityRemoteReferenceNotMatchException
+from mgutil.base import is_process_failed
+from mgutil.base.code import RET
+from mgutil.base.exc import InvalidEntityClsException
+from mgutil.base.exc import QueryMapFormatException
+from mgutil.base.exc import QueryJoinRuleLengthNotSupportException
+from mgutil.base.exc import EntityUpdateUniqueKeyExistsException
+from mgutil.base.exc import EntityAutoJoinFailedException
+from mgutil.base.exc import EntityBackrefAttributeNotFoundException
+from mgutil.base.exc import EntityNotFoundException
+from mgutil.base.exc import DbEntityInitTableDataNotFoundException
+from mgutil.base.exc import InitProcessorNotFoundException
+from mgutil.base.exc import DBEntityRemoteReferenceNotMatchException
 
 # log
 import logging
@@ -54,6 +50,7 @@ log = logging.getLogger("SYS")
 
 # export
 __all__ = [
+    "init_db",
     "init_db_processors",
     "base_db_processor",
     "base_db_update_processor",
@@ -61,8 +58,15 @@ __all__ = [
 ]
 
 # global
+db = {}
 g_entity_table_2_processor_map = {}
 g_entity_table_2_init_processor_map = {}
+
+
+def init_db(app_db):
+    global db
+    if (db is None):
+        db = app_db
 
 
 class base_db_processor(mgt_c_object):
@@ -83,12 +87,8 @@ class base_db_processor(mgt_c_object):
     _null_supported_filter_attrs = None
     _entity_relation_backref_db_attr_list = None
     _entity_relation_fk_ref_db_attr_list = None
-    _entity_relation_ref_target_list = None
-    _processor_map = {}
 
     def __init__(self, in_obj={}, b_reverse=False, entity_cls_name=None, key2attr_map: dict = {}):
-        from .exception import InvalidEntityClsException
-
         if (entity_cls_name):
             Cls = globals().get(entity_cls_name)
             if (not Cls):
@@ -105,7 +105,6 @@ class base_db_processor(mgt_c_object):
             self._entity_relation_backref_db_attr_list = []
         if (self._entity_relation_fk_ref_db_attr_list is None):
             self._entity_relation_fk_ref_db_attr_list = []
-            self._entity_relation_ref_target_list = []
         if (self._support_attr_list is None):
             self._support_attr_list = []
         self._support_attr_list += set(attr_list(
@@ -344,7 +343,7 @@ class base_db_processor(mgt_c_object):
                 #
                 key_list = key.split('.')
                 join_rule_list, attr, attr_s, db_key, db_keys = parse_join_rule_n_attr_s(
-                    cls._entity_cls, key_list, cls._processor_map)
+                    cls._entity_cls, key_list)
 
                 if (not attr):
                     if (db_key_s is None):
@@ -384,8 +383,6 @@ class base_db_processor(mgt_c_object):
                 if (id(attr) != id(attr_s)):
                     # rule is normal match
                     value = op_v
-                    if (value is None and "eq" == op):
-                        op = "is"
                 else:
                     # rule will be list match
                     op = "in"
@@ -400,8 +397,6 @@ class base_db_processor(mgt_c_object):
                 try:
                     op = op_v["op"]
                     value = op_v["value"]
-                    if (value is None and "eq" == op):
-                        op = "is"
                 except Exception:
                     raise QueryMapFormatException(
                         data=(cls.tablename(), "%s: %s" % (key, op_v)))
@@ -410,7 +405,7 @@ class base_db_processor(mgt_c_object):
 
             # skip op_v(None) filters if attribute doesn't support None value filtering process
             # we usually default filter args to None if user did NOT given.
-            if (value is None or op_v is None) and (db_key not in cls._null_supported_filter_attrs):
+            if (value is None or op_v is None) and (attr not in cls._null_supported_filter_attrs):
                 continue
 
             # filter
@@ -475,10 +470,8 @@ class base_db_processor(mgt_c_object):
 
         #
         for key, value in update_dict.items():
-            if (key in cls._entity_relation_backref_db_attr_list or
-                    key in cls._entity_relation_ref_target_list):
+            if (key in cls._entity_relation_backref_db_attr_list):
                 continue
-
             db_attr = key2db_attr_map.get(key, key)
             try:
                 setattr(entity_obj, db_attr, value)
@@ -536,9 +529,7 @@ def parse_attr_s(entity_cls, key2attr_map, key):
     return attr, attr_s, db_key, db_key_s
 
 
-def init_db_processors(processor_dir_path, module_name, init_submod_list=[],
-                       processor_map=g_entity_table_2_processor_map,
-                       init_processor_map=g_entity_table_2_init_processor_map):
+def init_db_processors(processor_dir_path, module_name, init_submod_list=[]):
     # init db_processor._db_attr_2_key_map
     sub_modules = mgf_match_ls_sub_names(processor_dir_path,
                                          match_exp="^(?!_).+$",
@@ -558,11 +549,9 @@ def init_db_processors(processor_dir_path, module_name, init_submod_list=[],
             msg = ("Please define db_processor LIKE ${filename_base}_processor. "
                    "We'll do some init for your db_processor.")
             raise Exception(msg)
-        init_processor(db_processor, processor_map)
+        init_processor(db_processor, g_entity_table_2_processor_map)
         # db init processor
-        if (init_submod_list is None):
-            continue
-        if (mod_name in init_submod_list or not init_submod_list):
+        if mod_name in init_submod_list:
             db_init_processor = import_string(
                 "%s.%s:%s_init_processor" % (module_name, mod_name, mod_name))
             if (not db_init_processor):
@@ -570,12 +559,13 @@ def init_db_processors(processor_dir_path, module_name, init_submod_list=[],
                        "We'll do some init for your db_processor.")
                 log.warning(msg)
             else:
-                init_processor(db_init_processor, init_processor_map)
+                init_processor(db_init_processor,
+                               g_entity_table_2_init_processor_map)
 
     return
 
 
-def init_processor(db_processor, processor_map):
+def init_processor(db_processor, processor_map=g_entity_table_2_processor_map):
     # init db_processor 2 db_attr2key map
     attr2key_map = db_processor.db_attr_2_key_map()
     table_name = str(db_processor._entity_cls.__tablename__)
@@ -583,7 +573,6 @@ def init_processor(db_processor, processor_map):
         mgt_c_object._table_2_db_attr2key_map[table_name] = attr2key_map
     # init tablename 2 db_processor map
     processor_map[table_name] = db_processor
-    db_processor._processor_map = processor_map
 
     # init backref db keys
     relation_ships = inspect(db_processor._entity_cls).relationships
@@ -591,7 +580,6 @@ def init_processor(db_processor, processor_map):
         db_processor._entity_relation_backref_db_attr_list = []
     if (db_processor._entity_relation_fk_ref_db_attr_list is None):
         db_processor._entity_relation_fk_ref_db_attr_list = []
-        db_processor._entity_relation_ref_target_list = []
     for tar_relation in relation_ships:
         if (not tar_relation.backref):
             db_processor._entity_relation_backref_db_attr_list.append(
@@ -599,15 +587,11 @@ def init_processor(db_processor, processor_map):
         else:
             db_processor._entity_relation_fk_ref_db_attr_list.append(
                 "%s_id" % tar_relation.key)
-            db_processor._entity_relation_ref_target_list.append(
-                tar_relation.key)
 
     db_processor._entity_relation_backref_db_attr_list = list(
         set(db_processor._entity_relation_backref_db_attr_list))
     db_processor._entity_relation_fk_ref_db_attr_list = list(
         set(db_processor._entity_relation_fk_ref_db_attr_list))
-    db_processor._entity_relation_ref_target_list = list(
-        set(db_processor._entity_relation_ref_target_list))
     # affect to mgt_c_object._to_model_excelude_db_attr_list
     if (not db_processor._to_model_excelude_db_attr_list):
         db_processor._to_model_excelude_db_attr_list = db_processor._entity_relation_backref_db_attr_list
@@ -648,7 +632,7 @@ def init_processor(db_processor, processor_map):
     return
 
 
-def parse_join_rule_n_attr_s(initial_entity_cls, key_list, processor_map):
+def parse_join_rule_n_attr_s(initial_entity_cls, key_list):
     """
     @Return :
         @join_rule_list:
@@ -688,24 +672,18 @@ def parse_join_rule_n_attr_s(initial_entity_cls, key_list, processor_map):
         #
         key = key_list[i]
         table_name = local_entity_cls.__tablename__
-        local_processor = processor_map[table_name]
+        local_processor = g_entity_table_2_processor_map[table_name]
         local_key2attr = local_processor._key_2_db_attr_map if (
             local_processor._key_2_db_attr_map is not None) else {}
         db_key = local_key2attr.get(key, key)
         remote_entity_cls, jointype, local_remote_join_pairs = parse_join_rule_with_single_remote_table(
-            local_processor, local_entity_cls, db_key, processor_map
+            local_processor, local_entity_cls, db_key
         )
         local_table_db_key = "%s.%s" % (table_name, db_key)
 
         if (not remote_entity_cls):
-            msg = ("%s: Join from local db_attr[%s.%s] failed." % (
-                RET.INFO(RET.E_ENTITY_AUTO_JOIN_FAILED), table_name, db_key))
-            log.error(msg)
             raise EntityAutoJoinFailedException(local_table_db_key)
         if (1 < len(local_remote_join_pairs)):
-            msg = "%s" % (
-                RET.INFO(RET.E_ORM_JOIN_RULE_LENGTH_NOT_SUPPORTED_ERROR))
-            log.error(msg)
             raise QueryJoinRuleLengthNotSupportException(local_table_db_key)
 
         join_rule_list.append(
@@ -715,7 +693,7 @@ def parse_join_rule_n_attr_s(initial_entity_cls, key_list, processor_map):
     # last attr
     key = key_list[-1]
     last_table_name = remote_entity_cls.__tablename__
-    last_processor = processor_map[last_table_name]
+    last_processor = g_entity_table_2_processor_map[last_table_name]
     last_key2attr = last_processor._key_2_db_attr_map if (
         last_processor._key_2_db_attr_map is not None) else {}
     attr, attr_s, db_key, db_key_s = parse_attr_s(
@@ -724,7 +702,7 @@ def parse_join_rule_n_attr_s(initial_entity_cls, key_list, processor_map):
     return join_rule_list, attr, attr_s, db_key, db_key_s
 
 
-def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key, processor_map):
+def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key):
     """
     @return : (Model, str0, <list:<list:str1, attr1, str2, attr2>>)
         @Model : remote entity class
@@ -784,10 +762,10 @@ def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key, p
                     remote_table_key = "%s.%s" % (
                         pair_remote.table.name, pair_remote.key)
 
-                    local_entity_cls = processor_map[pair_local.table.name]._entity_cls
+                    local_entity_cls = g_entity_table_2_processor_map[pair_local.table.name]._entity_cls
                     local_attr = getattr(
                         local_entity_cls, pair_local.key, None)
-                    remote_entity_cls = processor_map[pair_remote.table.name]._entity_cls
+                    remote_entity_cls = g_entity_table_2_processor_map[pair_remote.table.name]._entity_cls
                     remote_attr = getattr(
                         remote_entity_cls, pair_remote.key, None)
 
@@ -821,12 +799,8 @@ class base_db_update_processor(base_db_processor):
 
     @classmethod
     def update(cls, model_id, up_params: dict, session=db.session, unique_keys=[]):
-        if (isinstance(up_params, dict)):
-            up_params["operator_id"] = None
-            up_params["operate_time"] = datetime.now()
-        elif (isinstance(up_params, base_db_processor)):
-            up_params.__dict__["operator_id"] = None
-            up_params.__dict__["operate_time"] = datetime.now()
+        up_params["operator_id"] = None
+        up_params["operate_time"] = datetime.now()
         return super().update(model_id, up_params, session=session, unique_keys=unique_keys)
 
 
@@ -878,10 +852,8 @@ class base_db_init_processor(base_db_processor):
             friend_key_2_key_map = db_attr_2_key_map
         datasheet = table_2_datasheet_dict.get(table_name)
         api_datasheet = []
-        if (datasheet is None):
+        if (not datasheet):
             raise DbEntityInitTableDataNotFoundException(table_name)
-        elif (not datasheet):
-            return
         else:
             # force friend_key -> API_key
             if (cls._friend_key_2_key_dict):
@@ -940,23 +912,17 @@ class base_db_init_processor(base_db_processor):
             for key in cls._autogen_keys:
                 entity_proc.attr_generate(key, getattr(entity_proc, key))
 
-            b_do_add = (entity_proc.id is None)
-            if (entity_proc.id):
-                if (not entity_proc.fetch(entity_proc.id)):
-                    b_do_add = True
-
-            if (b_do_add):
+            if (entity_proc.id is None):
                 try:
                     # auto generate key(s) never repeat
-                    if (cls._unique_user_key_list and
-                            not (set(cls._unique_user_key_list) & set(cls._autogen_keys))):
+                    if (not (set(cls._unique_user_key_list) & set(cls._autogen_keys))):
                         #
                         fetch_p = {}
                         for key in cls._unique_user_key_list:
                             fetch_p[key] = entity_proc.attr(key)
                         if (cls.fetch(fetch_p)):
-                            log.info("\n    >>--> [EXISTS] "
-                                     "%s ." % (str(entity_proc)))
+                            log.info("\n    >>--> "
+                                     "%s EXISTS." % (str(entity_proc)))
                             continue
 
                     rcd = entity_proc.add()
@@ -973,7 +939,7 @@ class base_db_init_processor(base_db_processor):
                     else:
                         raise(e)
             else:
-                cls.update(entity_proc.id, entity_proc)
+                entity_proc.update()
 
         cls._init_flag = True
         return

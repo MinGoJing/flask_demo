@@ -33,7 +33,9 @@ def test_main():
         print("%s\n" % (data_sheet))
 
     out_file_path = in_file_path.replace("case01", "case01_dump")
-    bret = xls_std_dump(out_file_path, xls_sheet)
+    success = xls_std_dump(out_file_path, xls_sheet)
+    if (not success):
+        print("Failed.")
 
     print("done.")
     return True, msg
