@@ -15,7 +15,6 @@
 
 # py
 
-
 # local
 
 # log
@@ -123,6 +122,15 @@ class XlsxWriteNotSupportedException(UtilBaseException):
         @str : filepath
     """
     msg = ('Xlsx File<{}> Write NOT supported yet')
+
+
+class FileRemovePermissionDeniedException(UtilBaseException):
+    """
+    @data : (str1, str2)
+        @str1 : file path
+        @str2 : exception string
+    """
+    msg = ('File<{}> remove failed: {}')
 
 
 class FolderCreateException(UtilBaseException):

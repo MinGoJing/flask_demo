@@ -24,6 +24,7 @@ from . file import file_basename_first_part
 from .. base.string import str2codec
 from .. base.exc import XlsxWriteNotSupportedException
 from .. base.exc import FolderCreateException
+from .. base.exc import FileRemovePermissionDeniedException
 from .. base.exc import Str2CodecException
 
 
@@ -89,10 +90,18 @@ def xls_std_parse(file_path):
     return sheet_dict, msg
 
 
-def xls_std_dump(o_file_path, data_sheets={}):
+def xls_std_dump(o_file_path, data_sheets={}, b_force=False):
     #
     if (o_file_path.endswith(".xlsx")):
         raise XlsxWriteNotSupportedException(o_file_path)
+
+    #
+    if (b_force and os.path.exists(o_file_path)):
+        try:
+            os.remove(o_file_path)
+        except Exception as e:
+            log.error(str(e))
+            raise FileRemovePermissionDeniedException(o_file_path)
 
     #
     folder_path = path.dirname(path.abspath(o_file_path))

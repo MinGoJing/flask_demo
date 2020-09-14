@@ -123,6 +123,8 @@ class mgt_c_object(object):
     def __init__(self, input_obj={}, b_reserve=False):
         if (self._user_support_attr_list is None):
             self._user_support_attr_list = []
+        if (self.__class__._user_support_attr_list is None):
+            self.__class__._user_support_attr_list = []
         if (self._include_attr_list is None):
             self._include_attr_list = []
         if (self._exclude_attr_list is None):
