@@ -35,7 +35,7 @@ __all__ = [
 #
 class department_processor(base_db_update_processor):
     _entity_cls = Department
-    _null_supported_filter_attrs = []
+    _null_supported_filter_db_attrs = []
     # Use db unique settings as default.
     #   You can define it here if forgot this in db design.
     _unique_user_key_list = ["name"]
@@ -58,7 +58,7 @@ class department_processor(base_db_update_processor):
 
 class department_init_processor(department_processor, base_db_init_processor):
     _entity_cls = Department
-    _null_supported_filter_attrs = []
+    _null_supported_filter_db_attrs = []
     # Use db unique settings as default.
     #   You can define it here if forgot this in db design.
     _unique_user_key_list = ["name"]

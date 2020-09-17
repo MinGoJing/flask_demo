@@ -32,7 +32,7 @@ __all__ = [
 #
 class session_processor(base_db_update_processor):
     _entity_cls = MsssSession
-    _null_supported_filter_attrs = []
+    _null_supported_filter_db_attrs = []
     # If NOT set, inner_join if foreign_key is NOT nullable else left_join
     # This is useful if there is NO foreign key settings in DB schema
     # @format:

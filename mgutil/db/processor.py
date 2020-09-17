@@ -84,7 +84,7 @@ class base_db_processor(mgt_c_object):
     _key_2_db_attr_map = None
     _db_attr_2_key_map = None
     _unique_user_key_list = None
-    _null_supported_filter_attrs = None
+    _null_supported_filter_db_attrs = None
     _entity_relation_backref_db_attr_list = None
     _entity_relation_fk_ref_db_attr_list = None
 
@@ -113,8 +113,8 @@ class base_db_processor(mgt_c_object):
             entity_relation_backref_attrs=self._entity_relation_backref_db_attr_list))
         if (self._default_value_map is None):
             self._default_value_map = {}
-        if (self._null_supported_filter_attrs is None):
-            self._null_supported_filter_attrs = []
+        if (self._null_supported_filter_db_attrs is None):
+            self._null_supported_filter_db_attrs = []
         if (self._unique_user_key_list is None):
             self._unique_user_key_list = []
 
@@ -145,9 +145,9 @@ class base_db_processor(mgt_c_object):
 
     @property
     def null_supported_filter_attrs(self):
-        if (not self._null_supported_filter_attrs):
+        if (not self._null_supported_filter_db_attrs):
             return []
-        return self._null_supported_filter_attrs
+        return self._null_supported_filter_db_attrs
 
     @classmethod
     def ex_join_rules(cls):
@@ -331,9 +331,9 @@ class base_db_processor(mgt_c_object):
 
                 if (not attr):
                     if (db_key_s is None):
-                        if (op_v is None and db_key not in cls._null_supported_filter_attrs):
+                        if (op_v is None and db_key not in cls._null_supported_filter_db_attrs):
                             continue
-                    elif (op_v is None and db_key_s not in cls._null_supported_filter_attrs):
+                    elif (op_v is None and db_key_s not in cls._null_supported_filter_db_attrs):
                         continue
 
                     raise QueryMapFormatException(
@@ -347,9 +347,9 @@ class base_db_processor(mgt_c_object):
 
                 if (not attr):
                     if (db_key_s is None):
-                        if (op_v is None and db_key not in cls._null_supported_filter_attrs):
+                        if (op_v is None and db_key not in cls._null_supported_filter_db_attrs):
                             continue
-                    elif (op_v is None and db_key_s not in cls._null_supported_filter_attrs):
+                    elif (op_v is None and db_key_s not in cls._null_supported_filter_db_attrs):
                         continue
 
                     raise QueryMapFormatException(
@@ -405,7 +405,7 @@ class base_db_processor(mgt_c_object):
 
             # skip op_v(None) filters if attribute doesn't support None value filtering process
             # we usually default filter args to None if user did NOT given.
-            if (value is None or op_v is None) and (attr not in cls._null_supported_filter_attrs):
+            if (value is None or op_v is None) and (attr not in cls._null_supported_filter_db_attrs):
                 continue
 
             # filter
