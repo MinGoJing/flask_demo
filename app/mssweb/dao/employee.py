@@ -35,7 +35,7 @@ __all__ = [
 #
 class employee_processor(base_db_update_processor):
     _entity_cls = Employee
-    _null_supported_filter_attrs = []
+    _null_supported_filter_db_attrs = []
     # Use db unique settings as default.
     #   You can define it here if forgot this in db design.
     _unique_user_key_list = ["number"]
@@ -58,7 +58,7 @@ class employee_processor(base_db_update_processor):
 
 class employee_init_processor(employee_processor, base_db_init_processor):
     _entity_cls = Employee
-    _null_supported_filter_attrs = []
+    _null_supported_filter_db_attrs = []
     # Use db unique settings as default.
     #   You can define it here if forgot this in db design.
     _unique_user_key_list = ["number"]

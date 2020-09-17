@@ -33,7 +33,7 @@ __all__ = [
 #
 class task_output_processor(base_db_update_processor):
     _entity_cls = MsswTaskOutput
-    _null_supported_filter_attrs = []
+    _null_supported_filter_db_attrs = []
     # Use db unique settings as default.
     #   You can define it here if forgot this in db design.
     _unique_user_key_list = []
