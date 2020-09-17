@@ -14,10 +14,13 @@
 '''
 
 # py
+from datetime import date
+from datetime import datetime
 import os
 from os import path
-import xlrd
 import xlwt
+import xlrd
+from xlrd import xldate
 
 # local
 from . file import file_basename_first_part
@@ -83,14 +86,24 @@ def xls_std_parse(file_path):
             if row:
                 app = {}
                 for y in range(0, ncols):
-                    app[col_name_list[y]] = row[y] if (str(row[y])) else None
+                    ctype = tab.cell(x, y).ctype
+                    if (3 != ctype):
+                        app[col_name_list[y]] = row[y] if (
+                            str(row[y])) else None
+                    else:
+                        app[col_name_list[y]] = xldate.xldate_as_datetime(
+                            row[y], 0)
                 dt_list.append(app)
         sheet_dict[tab_name] = dt_list
 
     return sheet_dict, msg
 
 
-def xls_std_dump(o_file_path, data_sheets={}, b_force=False):
+def xls_std_dump(o_file_path, data_sheets={}, encoding="utf-8",
+                 b_dump_title=False, sheet_title_dict={}, b_force=False,
+                 date_fmt="M/D/YY"):
+    # init
+    msg = "ok"
     #
     if (o_file_path.endswith(".xlsx")):
         raise XlsxWriteNotSupportedException(o_file_path)
@@ -113,16 +126,31 @@ def xls_std_dump(o_file_path, data_sheets={}, b_force=False):
             e = e
             raise FolderCreateException(folder_path)
 
+    style = xlwt.XFStyle()
+    date_style = xlwt.XFStyle()
+    date_style.num_format_str = date_fmt
+
     try:
-        workbook = xlwt.Workbook()
+        workbook = xlwt.Workbook(encoding)
         for sheet_name, data_list in data_sheets.items():
             worksheet = workbook.add_sheet(sheet_name)
             col_names = []
             if (data_list):
                 col_names = [key for key in data_list[0]]
 
-            # write column features
+            # init row
             row_idx = 0
+            if (b_dump_title):
+                table_title = sheet_name
+                if (sheet_title_dict.get(sheet_name)):
+                    table_title = sheet_title_dict[sheet_name]
+
+                worksheet.write_merge(
+                    row_idx, 0, 0, len(col_names)-1, table_title, style)
+                row_idx += 1
+                workbook.save(o_file_path)
+
+            # write column features
             for col_idx in range(len(col_names)):
                 worksheet.write(row_idx, col_idx, col_names[col_idx])
             row_idx += 1
@@ -139,15 +167,19 @@ def xls_std_dump(o_file_path, data_sheets={}, b_force=False):
                         bret, v = str2codec(v, encoding="utf-8")
                         if (not bret):
                             raise Str2CodecException(v, "utf-8")
-                    worksheet.write(row_idx, col_idx, v)
+
+                    if (not isinstance(v, (date, datetime))):
+                        worksheet.write(row_idx, col_idx, v)
+                    else:
+                        worksheet.write(row_idx, col_idx, v, date_style)
                 row_idx += 1
 
         workbook.save(o_file_path)
     except Exception as e:
         log.error(str(e))
-        return False
+        return False, None, msg
 
-    return True
+    return True, o_file_path, msg
 
 
 if ("__main__" == __name__):
