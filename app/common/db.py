@@ -536,9 +536,9 @@ def parse_attr_s(entity_cls, key2attr_map, key):
     return attr, attr_s, db_key, db_key_s
 
 
-def init_db_processors(processor_dir_path, module_name, init_submod_list=[], 
+def init_db_processors(processor_dir_path, module_name, init_submod_list=[],
                        processor_map=g_entity_table_2_processor_map,
-                       init_processor_map=g_entity_table_2_init_processor_map, 
+                       init_processor_map=g_entity_table_2_init_processor_map,
                        b_do_init_processor_init=False):
     # init db_processor._db_attr_2_key_map
     sub_modules = mgf_match_ls_sub_names(processor_dir_path,
@@ -546,9 +546,9 @@ def init_db_processors(processor_dir_path, module_name, init_submod_list=[],
                                          is_path_relative=True, match_opt=0)
     if（not init_submod_list and b_do_init_processor_init):
         for mod in sub_modules:
-            mod_name = mod.split('.')[0]
+            mod_name=mod.split('.')[0]
             init_submod_list.append(mod_name)
-    
+
     # init entity backref attrs
     # "table_name" : {
     #   "processor": db_processor cls,
@@ -557,11 +557,11 @@ def init_db_processors(processor_dir_path, module_name, init_submod_list=[],
     # }
     for mod in sub_modules:
         # iterate db_processor
-        mod_name = mod.split('.')[0]
-        db_processor = import_string(
+        mod_name=mod.split('.')[0]
+        db_processor=import_string(
             "%s.%s:%s_processor" % (module_name, mod_name, mod_name))
         if (not db_processor):
-            msg = ("Please define db_processor LIKE ${filename_base}_processor. "
+            msg=("Please define db_processor LIKE ${filename_base}_processor. "
                    "We'll do some init for your db_processor.")
             raise Exception(msg)
         init_processor(db_processor, processor_map)
@@ -569,7 +569,7 @@ def init_db_processors(processor_dir_path, module_name, init_submod_list=[],
         if (init_submod_list is None):
             continue
         if (mod_name in init_submod_list or not init_submod_list):
-            db_init_processor = import_string(
+            db_init_processor=import_string(
                 "%s.%s:%s_init_processor" % (module_name, mod_name, mod_name))
             if (not db_init_processor):
                 msg = ("Please define db_processor LIKE ${filename_base}_init_processor. "
