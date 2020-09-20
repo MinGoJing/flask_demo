@@ -148,10 +148,32 @@ class InvalidArgsException(APIException):
 
 class QueryMapFormatException(APIException):
     """
-    @data : str : error query map keys seperated with ','
+    @data : str1, str2
+        @str1: entity table name
+        @str2: error query API key:value
     """
     result_code = RET.E_BAD_PARAMETER
     msg = "entity <{}> query map keys<{}> error."
+
+
+class GroupByKeyException(APIException):
+    """
+    @data : str1, str2
+        @str1: entity table name
+        @str2: error group API key
+    """
+    result_code = RET.E_BAD_PARAMETER
+    msg = "entity <{}> group by key<{}> error."
+
+
+class OrderByKeyException(APIException):
+    """
+    @data : str1, str2
+        @str1: entity table name
+        @str2: error order API key
+    """
+    result_code = RET.E_BAD_PARAMETER
+    msg = "entity <{}> order by key<{}> error."
 
 
 class StringFieldEmptyException(APIException):
