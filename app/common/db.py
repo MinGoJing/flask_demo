@@ -23,6 +23,7 @@ from werkzeug.utils import import_string
 from flask_restful import fields
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import aliased
 
 # app
 from app import db
@@ -34,10 +35,13 @@ from mgutil.base import g_exclude_attrs_from_db_model
 from mgutil.base import attr_list
 from mgutil.deco import transaction
 from mgutil.file import mgf_match_ls_sub_names
+from mgutil.parser import file_basename_without_suffix
 
 # local
 from .func import is_process_failed
 from .code import RET
+from .exception import GroupByKeyException
+from .exception import OrderByKeyException
 from .exception import QueryMapFormatException
 from .exception import QueryJoinRuleLengthNotSupportException
 from .exception import EntityUpdateUniqueKeyExistsException
@@ -246,12 +250,30 @@ class base_db_processor(mgt_c_object):
         return len(base_model_obj_list)
 
     @classmethod
-    def get(cls, query_map={}, to_user_obj=True, joined_keys=[], session=db.session) -> List[mgt_c_object]:
-        query, p_index, p_size = cls.gen_query(query_map, session=session)
+    def get(cls, query_map={}, to_user_obj=True, joined_keys=[],
+            group_by=[], order_by=[], session=db.session) -> List[mgt_c_object]:
+        query, p_index, p_size, joined_remote_db_attr_map = cls.gen_query(
+            query_map, session=session)
         if (joined_keys):
             key2attr = cls._key_2_db_attr_map
+            # TODO: jmj, gen join
+
             for key in joined_keys:
                 query = query.options(joinedload(key2attr.get(key, key)))
+
+        # group
+        if (group_by):
+            group_by_db_attr_list = cls.gen_group(
+                query, group_by, joined_remote_db_attr_map, session=session)
+            if (group_by_db_attr_list):
+                query = query.group_by(*group_by_db_attr_list)
+
+        # order
+        if (order_by):
+            order_by_db_attr_list = cls.gen_order(
+                query, order_by, joined_remote_db_attr_map, session=session)
+            if (order_by_db_attr_list):
+                query = query.order_by(*order_by_db_attr_list)
 
         if (p_index):
             rcds = query.limit(p_size).offset(p_size * (p_index - 1))
@@ -263,14 +285,31 @@ class base_db_processor(mgt_c_object):
         return [cls(rcd) for rcd in rcds]
 
     @classmethod
-    def fetch(cls, query_map={}, to_user_obj=True, joined_keys=[], session=db.session):
+    def fetch(cls, query_map={}, to_user_obj=True, joined_keys=[],
+              group_by=[], order_by=[], session=db.session):
         if (not isinstance(query_map, dict)):
             query_map = {"id": query_map}
-        query, p_index, p_size = cls.gen_query(query_map, session=session)
+        query, p_index, p_size, joined_remote_db_attr_map = cls.gen_query(
+            query_map, session=session)
         if (joined_keys):
             key2attr = cls._key_2_db_attr_map
             for key in joined_keys:
                 query = query.options(joinedload(key2attr.get(key, key)))
+
+        # group
+        if (group_by):
+            group_by_db_attr_list = cls.gen_group(
+                query, group_by, joined_remote_db_attr_map, session=session)
+            if (group_by_db_attr_list):
+                query = query.group_by(*group_by_db_attr_list)
+
+        # order
+        if (order_by):
+            order_by_db_attr_list = cls.gen_order(
+                query, order_by, joined_remote_db_attr_map, session=session)
+            if (order_by_db_attr_list):
+                query = query.order_by(*order_by_db_attr_list)
+
         rcd = query.first()
         if (not to_user_obj or not rcd):
             return rcd
@@ -322,7 +361,7 @@ class base_db_processor(mgt_c_object):
 
         key2attr = cls._key_2_db_attr_map if (
             cls._key_2_db_attr_map is not None) else {}
-        joined_rule_keys = []
+        joined_remote_db_attr_map = {}
         for key, op_v in query_map.items():
 
             if (not key.count(".")):
@@ -357,14 +396,14 @@ class base_db_processor(mgt_c_object):
                         data=(cls.tablename(), "%s: %s" % (key, op_v)))
 
                 # let's join the new exist ones
-                for single_rule_key, remote_entity_cls, jointype, join_attr_pairs in join_rule_list:
-                    if (single_rule_key in joined_rule_keys):
+                for remote_entity_db_attr_path, remote_entity_cls, jointype, join_attr_pairs in join_rule_list:
+                    if (remote_entity_db_attr_path in joined_remote_db_attr_map):
                         continue
                     else:
                         # we support only one join rule yet
                         if (1 < len(join_attr_pairs)):
-                            data = "[%s] to [%s]" % (
-                                single_rule_key, str(join_attr_pairs[0]))
+                            data = "[%s.%s] to [%s]" % (
+                                cls.tablename(), remote_entity_db_attr_path, str(join_attr_pairs[0]))
                             raise QueryJoinRuleLengthNotSupportException(data)
 
                         join_func = getattr(query, jointype, None)
@@ -376,7 +415,7 @@ class base_db_processor(mgt_c_object):
                             rules.append(local_attr == remote_attr)
 
                         query = join_func(remote_entity_cls, *rules)
-                        joined_rule_keys.append(single_rule_key)
+                        joined_remote_db_attr_map[remote_entity_db_attr_path] = remote_entity_cls
 
             # op & value
             op = "eq"
@@ -436,9 +475,164 @@ class base_db_processor(mgt_c_object):
 
         # do limit
         if (b_limit):
-            return query, page_index, page_size
+            return query, page_index, page_size, joined_remote_db_attr_map
 
-        return query, None, None
+        return query, None, None, joined_remote_db_attr_map
+
+    @classmethod
+    def gen_group(cls, query, group_by=[], joined_remote_db_attr_map={}, session=db.session):
+        #
+        group_by_db_attr_list = []
+        #
+        if (not group_by):
+            return group_by_db_attr_list
+
+        key2attr = cls._key_2_db_attr_map if (
+            cls._key_2_db_attr_map is not None) else {}
+        for key in group_by:
+
+            if (not key.count(".")):
+                # local Cls attr, support multifie attr(s) ends with 's'.
+                attr, attr_s, db_key, db_key_s = parse_attr_s(
+                    cls._entity_cls, key2attr, key)
+
+                if (not attr):
+                    raise GroupByKeyException(
+                        data=(cls.tablename(), key))
+
+                group_by_db_attr_list.append(attr)
+            else:
+                # if remote entity cls key path exists, use it
+                key_list = key.split('.')
+                user_key = key_list[-1]
+                remote_entity_key_path = file_basename_without_suffix(key)
+                #
+                if (remote_entity_key_path in joined_remote_db_attr_map):
+                    remote_entity_cls = joined_remote_db_attr_map[remote_entity_key_path]
+                    remote_key2attr = remote_entity_cls._key_2_db_attr_map if (
+                        remote_entity_cls._key_2_db_attr_map is not None) else {}
+                    db_key = remote_key2attr.get(user_key, user_key)
+                    attr = getattr(remote_entity_cls, db_key)
+                    group_by_db_attr_list.append(attr)
+                    continue
+
+                # join pre entity Cls
+                #
+                join_rule_list, attr, attr_s, db_key, db_keys = parse_join_rule_n_attr_s(
+                    cls._entity_cls, key_list, cls._processor_map)
+
+                if (not attr):
+                    raise GroupByKeyException(
+                        data=(cls.tablename(), key))
+
+                group_by_db_attr_list.append(attr)
+
+                # let's join the new exist ones
+                for remote_entity_db_attr_path, remote_entity_cls, jointype, join_attr_pairs in join_rule_list:
+                    if (remote_entity_db_attr_path in joined_remote_db_attr_map):
+                        continue
+                    else:
+                        # we support only one join rule yet
+                        if (1 < len(join_attr_pairs)):
+                            data = "[%s] to [%s]" % (
+                                remote_entity_db_attr_path, str(join_attr_pairs[0]))
+                            raise QueryJoinRuleLengthNotSupportException(data)
+
+                        join_func = getattr(query, jointype, None)
+                        if (not join_func):
+                            raise Exception()
+
+                        rules = []
+                        for local_table_col, local_attr, remote_table_col, remote_attr in join_attr_pairs:
+                            rules.append(local_attr == remote_attr)
+
+                        query = join_func(remote_entity_cls, *rules)
+                        joined_remote_db_attr_map[remote_entity_db_attr_path] = remote_entity_cls
+
+        return group_by_db_attr_list
+
+    @classmethod
+    def gen_order(cls, query, order_by=[], joined_remote_db_attr_map={}, session=db.session):
+        #
+        order_by_db_attr_list = []
+
+        #
+        if (not order_by):
+            return order_by_db_attr_list
+
+        key2attr = cls._key_2_db_attr_map if (
+            cls._key_2_db_attr_map is not None) else {}
+        for key in order_by:
+            order_desc = False
+            if ('-' == key[0]):
+                order_desc = True
+                key = key[1:]
+
+            if (not key.count(".")):
+                # local Cls attr, support multifie attr(s) ends with 's'.
+                attr, attr_s, db_key, db_key_s = parse_attr_s(
+                    cls._entity_cls, key2attr, key)
+
+                if (not attr):
+                    raise OrderByKeyException(
+                        data=(cls.tablename(), key))
+
+                if (order_desc):
+                    attr = attr.desc()
+                order_by_db_attr_list.append(attr)
+            else:
+                # if remote entity cls key path exists, use it
+                key_list = key.split('.')
+                user_key = key_list[-1]
+                remote_entity_key_path = file_basename_without_suffix(key)
+                #
+                if (remote_entity_key_path in joined_remote_db_attr_map):
+                    remote_entity_cls = joined_remote_db_attr_map[remote_entity_key_path]
+                    remote_key2attr = remote_entity_cls._key_2_db_attr_map if (
+                        remote_entity_cls._key_2_db_attr_map is not None) else {}
+                    db_key = remote_key2attr.get(user_key, user_key)
+                    attr = getattr(remote_entity_cls, db_key)
+                    if (order_desc):
+                        attr = attr.desc()
+                    order_by_db_attr_list.append(attr)
+                    continue
+
+                # join pre entity Cls
+                #
+                join_rule_list, attr, attr_s, db_key, db_keys = parse_join_rule_n_attr_s(
+                    cls._entity_cls, key_list, cls._processor_map)
+
+                if (not attr):
+                    raise OrderByKeyException(
+                        data=(cls.tablename(), key))
+
+                if (order_desc):
+                    attr = attr.desc()
+                order_by_db_attr_list.append(attr)
+
+                # let's join the new exist ones
+                for remote_entity_db_attr_path, remote_entity_cls, jointype, join_attr_pairs in join_rule_list:
+                    if (remote_entity_db_attr_path in joined_remote_db_attr_map):
+                        continue
+                    else:
+                        # we support only one join rule yet
+                        if (1 < len(join_attr_pairs)):
+                            data = "[%s] to [%s]" % (
+                                remote_entity_db_attr_path, str(join_attr_pairs[0]))
+                            raise QueryJoinRuleLengthNotSupportException(data)
+
+                        join_func = getattr(query, jointype, None)
+                        if (not join_func):
+                            raise Exception()
+
+                        rules = []
+                        for local_table_col, local_attr, remote_table_col, remote_attr in join_attr_pairs:
+                            rules.append(local_attr == remote_attr)
+
+                        query = join_func(remote_entity_cls, *rules)
+                        joined_remote_db_attr_map[remote_entity_db_attr_path] = remote_entity_cls
+
+        return order_by_db_attr_list
 
     @classmethod
     @transaction(session=db.session)
@@ -654,7 +848,7 @@ def parse_join_rule_n_attr_s(initial_entity_cls, key_list, processor_map):
         @join_rule_list:
         [
             (
-                str0,       # local_table.local_db_key
+                str0,       # Entity key path
                 <Model>,    # remote entity cls to join
                 jointype_str# outerjoin(left) 和 join
                 [
@@ -678,6 +872,7 @@ def parse_join_rule_n_attr_s(initial_entity_cls, key_list, processor_map):
     join_rule_list = []
     local_entity_cls = initial_entity_cls
     remote_entity_cls = None
+    remote_entity_cls_key_path = ""
 
     # table join
     for i in range(len(key_list) - 1):
@@ -693,9 +888,13 @@ def parse_join_rule_n_attr_s(initial_entity_cls, key_list, processor_map):
             local_processor._key_2_db_attr_map is not None) else {}
         db_key = local_key2attr.get(key, key)
         remote_entity_cls, jointype, local_remote_join_pairs = parse_join_rule_with_single_remote_table(
-            local_processor, local_entity_cls, db_key, processor_map
-        )
+            local_processor, local_entity_cls, db_key, processor_map)
         local_table_db_key = "%s.%s" % (table_name, db_key)
+        if (not remote_entity_cls_key_path):
+            remote_entity_cls_key_path = "%s.%s" % (
+                remote_entity_cls_key_path, key)
+        else:
+            remote_entity_cls_key_path = key
 
         if (not remote_entity_cls):
             msg = ("%s: Join from local db_attr[%s.%s] failed." % (
@@ -709,11 +908,13 @@ def parse_join_rule_n_attr_s(initial_entity_cls, key_list, processor_map):
             raise QueryJoinRuleLengthNotSupportException(local_table_db_key)
 
         join_rule_list.append(
-            (local_table_db_key, remote_entity_cls,
+            (remote_entity_cls_key_path, remote_entity_cls,
              jointype, local_remote_join_pairs))
 
     # last attr
     key = key_list[-1]
+    if (not key):
+        return join_rule_list, None, None, "", ""
     last_table_name = remote_entity_cls.__tablename__
     last_processor = processor_map[last_table_name]
     last_key2attr = last_processor._key_2_db_attr_map if (
@@ -752,6 +953,7 @@ def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key, p
         if (db_key in ex_join_rules):
             join_rule = ex_join_rules[db_key]
             remote_entity_cls = join_rule["remote_entity_cls"]
+            remote_entity_cls = aliased(remote_entity_cls)
             jointype = join_rule["type"]
             if (hasattr(entity_cls, db_key)):
                 local_attr = getattr(entity_cls, db_key)
@@ -788,6 +990,7 @@ def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key, p
                     local_attr = getattr(
                         local_entity_cls, pair_local.key, None)
                     remote_entity_cls = processor_map[pair_remote.table.name]._entity_cls
+                    remote_entity_cls = aliased(remote_entity_cls)
                     remote_attr = getattr(
                         remote_entity_cls, pair_remote.key, None)
 

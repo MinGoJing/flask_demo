@@ -27,4 +27,5 @@ def utility_s_filter(filter_param, joined_keys=[]):
         filter_param["utility_main_group.name"] = filter_param["utility_sub_group_name"]
         filter_param.pop("utility_sub_group_name")
 
-    return utility_processor.get(filter_param, joined_keys=joined_keys)
+    return utility_processor.get(filter_param)
+    # , order_by = ["utility_main_group.id", "-utility_sub_group.id"], joined_keys=joined_keys
