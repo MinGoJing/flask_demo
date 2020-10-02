@@ -176,6 +176,16 @@ class OrderByKeyException(APIException):
     msg = "entity <{}> order by key<{}> error."
 
 
+class JoinKeyException(APIException):
+    """
+    @data : str1, str2
+        @str1: entity table name
+        @str2: error group API key
+    """
+    result_code = RET.E_BAD_PARAMETER
+    msg = "entity <{}> join key<{}> error."
+
+
 class StringFieldEmptyException(APIException):
     """
     @data : str
