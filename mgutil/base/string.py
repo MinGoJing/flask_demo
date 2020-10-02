@@ -14,9 +14,7 @@
 '''
 
 # py
-
-
-from chardet import UniversalDetector
+import chardet
 
 # log
 import logging
@@ -48,17 +46,15 @@ def str2codec(src_str, encoding="utf-8"):
 
     # locals
     str_codec = ""
-    # unicode, encode direct
-    if (type(u"") == type(src_str)):
-        src_str = src_str.encode(encoding)
+    # unicode, encode direct, py3
+    if (isinstance(src_str, str)):
+        if (encoding is not None):
+            src_str = src_str.encode(encoding)
         return True, src_str
 
     # init
-    u = UniversalDetector()
-    u.feed(src_str)
-    u.close()
-    codec_obj = u.result
-    str_codec = codec_obj["encoding"]
+    codec = chardet.detect(src_str)
+    str_codec = codec["encoding"]
     # equal
     if (str_codec == encoding):
         return True, src_str
@@ -76,7 +72,7 @@ def str2codec(src_str, encoding="utf-8"):
             str_str = src_str.decode(str_codec).encode(encoding)
     except Exception as e:
         log.error(str(e))
-        return False, str_str
+        return False, src_str
     return True, str_str
 
 
