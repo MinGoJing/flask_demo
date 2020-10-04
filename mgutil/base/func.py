@@ -36,7 +36,10 @@ __all__ = [
     "is_process_failed",
     "sub_feature_filter",
     "sub_feature_dict",
-    "sub_feature_marshal"
+    "sub_feature_marshal",
+    "name2underline",
+    "underline2camel",
+    "underline2pascal",
 ]
 
 
@@ -346,6 +349,65 @@ def sub_feature_marshal(src_objs, src_match_key_path, src_marshal_end_key,
     return
 
 
+def underline2camel(underline_name):
+    if (not underline_name):
+        return underline_name
+    if (not underline_name.count("_")):
+        return "%s%s" % (underline_name[0].lower(), underline_name[1:])
+
+    lst = []
+    next_upper = False
+    for idx, char in enumerate(underline_name):
+        if ('_' == char):
+            next_upper = True
+            continue
+        if (next_upper and 0 < len(lst)):
+            lst.append(char.upper())
+        else:
+            lst.append(char)
+        next_upper = False
+
+    return "".join(lst)
+
+
+def underline2pascal(underline_name):
+    if (not underline_name):
+        return underline_name
+
+    if (not underline_name.count("_")):
+        return "%s%s" % (underline_name[0].upper(), underline_name[1:])
+
+    lst = []
+    next_upper = True
+    for idx, char in enumerate(underline_name):
+        if ('_' == char):
+            next_upper = True
+            continue
+        if (next_upper):
+            lst.append(char.upper())
+        else:
+            lst.append(char)
+        next_upper = False
+
+    return "".join(lst)
+
+
+def name2underline(text):
+    lst = []
+    for index, char in enumerate(text):
+        if char.isupper() and index != 0:
+            lst.append("_")
+        lst.append(char)
+
+    return "".join(lst).lower()
+
+
+if __name__ == "__main__":
+    print(underline2camel("jljl_jjfsj_fs"))
+    print(underline2pascal("nam_jflsdj_fjsdj"))
+    print("done.")
+
+# # subobj_dict test
 # if ("__main__" == __name__):
 #     obj = {
 #         "name": "jsdkf",
