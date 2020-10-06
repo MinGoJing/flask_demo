@@ -6,7 +6,7 @@
 @Version :   1.0
 @Author  :   MinGo
 @Contact :   mingo_jing@163.com
-@License :   (C)Copyright since 2020, MinGo
+@License :   Copyright © since 2020 MinGo All Rights Reserved.
 @History :   
     1.0: 2020/07/27 07:07, MinGo
           1. Created.
