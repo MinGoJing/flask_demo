@@ -37,35 +37,40 @@ def is_string(obj):
         return True
 
 
-def str2codec(src_str, encoding="utf-8"):
+def str2codec(src_str, encoding=None):
     # args
     if (not is_string(src_str) and not isinstance(src_str, bytes)):
         return False, src_str
     if (0 == len(src_str)):
+        if (encoding is None):
+            # empty str is different to empty bytes (b'')
+            return True, ""
         return True, src_str
 
     # locals
     str_codec = ""
     # unicode, encode direct, py3
     if (isinstance(src_str, str)):
-        if (encoding is not None):
-            src_str = src_str.encode(encoding)
-        return True, src_str
+        if (encoding is None):
+            return True, src_str
+        return True, src_str.encode(encoding)
 
     # init
     codec = chardet.detect(src_str)
     str_codec = codec["encoding"]
-    # equal
+    # equal encoding
     if (str_codec == encoding):
         return True, src_str
+    elif (encoding is None):
+        return True, src_str.decode(str_codec)
 
     # try codec
+    str_str = src_str
     try:
         if (isinstance(src_str, bytes)):
-            str_str = str(src_str, encoding=str_codec)
             str_str = src_str.decode(str_codec).encode(encoding)
         elif ("Windows-1252" == str_codec or str_codec.starswith("ISO-8859-1")):
-            # str_str = src_str.replace("，", ",")
+            # why do this, we found problem while doing codec transfer in py2
             str_str = src_str
             pass
         else:
