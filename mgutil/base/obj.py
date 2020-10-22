@@ -14,6 +14,7 @@
 '''
 
 # py
+import sys
 from datetime import date
 from datetime import datetime
 
@@ -521,7 +522,8 @@ class mgt_c_object(object):
 
 
 def attr_list(cls, include_attrs=[], exclude_attrs=[],
-              attr2key_map={}, entity_relation_backref_attrs=[]):
+              attr2key_map={}, entity_relation_backref_attrs=[],
+              b_skip_sys_module=False):
     key_list = []
 
     for attr in dir(cls):
@@ -533,6 +535,49 @@ def attr_list(cls, include_attrs=[], exclude_attrs=[],
     for attr in entity_relation_backref_attrs:
         key = attr2key_map.get(attr, attr)
         key_list.append(key)
+
+    # skip attrs from system or third installed module
+    if (b_skip_sys_module):
+        from werkzeug.utils import import_string
+        sys_base_path = sys.base_prefix
+        for i in range(len(key_list)-1, -1, -1):
+            key = key_list[i]
+            var = getattr(cls, key)
+            var_mod_file = ""
+            var_str = str(var)
+
+            if (var_str.count('(built-in)')):
+                key_list.remove(key_list[i])
+                continue
+            elif (var_str.count(sys_base_path)):
+                key_list.remove(key_list[i])
+                continue
+
+            # skip basic type instance
+            if (isinstance(var, (int, bool, float, str,
+                                 dict, tuple, list))):
+                continue
+
+            try:
+                # skip class instance, but NOT function
+                if (hasattr(var, "__class__") and isinstance(getattr(var, "__class__"), type) and
+                        (not str(getattr(var, "__class__")).count("<class 'function'>"))):
+                    continue
+
+                # handle module directly
+                var_mod_file = getattr(var, "__file__")
+            except Exception as e:
+                e = e
+                if (not hasattr(var, "__module__")):
+                    continue
+
+                # handle import module secondly
+                var_module = getattr(var, "__module__")
+                fea_mod = import_string(var_module)
+                var_mod_file = getattr(fea_mod, "__file__")
+
+            if (var_mod_file.startswith(sys_base_path)):
+                key_list.remove(key_list[i])
 
     return key_list
 
