@@ -53,7 +53,7 @@ def _xls_obj_parse(file_path):
     return xls_obj
 
 
-def xls_std_parse(file_path):
+def xls_std_parse(file_path, b_skip_empty_rol=False):
     msg = "ok"
     sheet_dict = {}
 
@@ -83,7 +83,17 @@ def xls_std_parse(file_path):
             if row:
                 app = {}
                 for y in range(0, ncols):
-                    app[col_name_list[y]] = row[y] if (str(row[y])) else None
+                    ctype = tab.cell(x, y).ctype
+                    if (3 != ctype):
+                        app[col_name_list[y]] = row[y] if (
+                            str(row[y])) else None
+                    else:
+                        app[col_name_list[y]] = xldate.xldate_as_datetime(
+                            row[y], 0)
+                if (b_skip_empty_rol and not ("".join(map(lambda x: str(x), app.values())))):
+                    # skip empty rol
+                    continue
+
                 dt_list.append(app)
         sheet_dict[tab_name] = dt_list
 
