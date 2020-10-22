@@ -56,7 +56,7 @@ def _xls_obj_parse(file_path):
     return xls_obj
 
 
-def xls_std_parse(file_path):
+def xls_std_parse(file_path, b_skip_empty_rol=False):
     msg = "ok"
     sheet_dict = {}
 
@@ -93,6 +93,10 @@ def xls_std_parse(file_path):
                     else:
                         app[col_name_list[y]] = xldate.xldate_as_datetime(
                             row[y], 0)
+                if (b_skip_empty_rol and not ("".join(map(lambda x: str(x), app.values())))):
+                    # skip empty rol
+                    continue
+
                 dt_list.append(app)
         sheet_dict[tab_name] = dt_list
 
