@@ -29,7 +29,7 @@ __all__ = ["mgt_c_yaml_object"]
 
 class mgt_c_yaml_object(mgt_c_object):
 
-    def __init__(self, json_cfg, file_encoding='utf-8'):
+    def __init__(self, json_cfg, file_encoding='utf-8', env={}):
         config_json = {}
         if (isinstance(json_cfg, dict)):
             config_json = json_cfg
@@ -42,7 +42,7 @@ class mgt_c_yaml_object(mgt_c_object):
                 f_obj = open(json_cfg, encoding=file_encoding)
                 config_json = yaml.load(f_obj)
 
-        update_reference_4_json(config_json)
+        update_reference_4_json(config_json, env=env)
 
         mgt_c_object.__init__(self, config_json, True)
 
@@ -58,7 +58,7 @@ class mgt_c_yaml_object(mgt_c_object):
         return True
 
 
-def update_reference_4_json(json_obj):
+def update_reference_4_json(json_obj, env={}):
 
     def _get(json_obj, ref_path):
         fetch_obj = json_obj
@@ -82,6 +82,8 @@ def update_reference_4_json(json_obj):
                                 replace_v = obj[match_key]
                             elif (match_key in json_obj):
                                 replace_v = json_obj[match_key]
+                            elif (match_key in env):
+                                replace_v = env[match_key]
                             else:
                                 return
                         else:
