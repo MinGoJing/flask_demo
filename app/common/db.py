@@ -536,13 +536,19 @@ def parse_attr_s(entity_cls, key2attr_map, key):
     return attr, attr_s, db_key, db_key_s
 
 
-def init_db_processors(processor_dir_path, module_name, init_submod_list=[],
+def init_db_processors(processor_dir_path, module_name, init_submod_list=[], 
                        processor_map=g_entity_table_2_processor_map,
-                       init_processor_map=g_entity_table_2_init_processor_map):
+                       init_processor_map=g_entity_table_2_init_processor_map, 
+                       b_do_init_processor_init=False):
     # init db_processor._db_attr_2_key_map
     sub_modules = mgf_match_ls_sub_names(processor_dir_path,
                                          match_exp="^(?!_).+$",
                                          is_path_relative=True, match_opt=0)
+    if（not init_submod_list and b_do_init_processor_init):
+        for mod in sub_modules:
+            mod_name = mod.split('.')[0]
+            init_submod_list.append(mod_name)
+    
     # init entity backref attrs
     # "table_name" : {
     #   "processor": db_processor cls,
@@ -849,7 +855,7 @@ class base_db_init_processor(base_db_processor):
     _friend_key_2_key_dict = {}
 
     @classmethod
-    def initialize(cls, table_2_datasheet_dict={}, b_db_datasheet=False):
+    def initialize(cls, table_2_datasheet_dict={}, b_db_datasheet=False, b_do_unique_repeat_update=False):
         # if initted, break
         table_name = cls.tablename()
         if (cls._init_flag):
@@ -954,9 +960,23 @@ class base_db_init_processor(base_db_processor):
                         fetch_p = {}
                         for key in cls._unique_user_key_list:
                             fetch_p[key] = entity_proc.attr(key)
-                        if (cls.fetch(fetch_p)):
-                            log.info("\n    >>--> [EXISTS] "
+                            
+                        fetch_entity = cls.fetch(fetch_p)
+                        if (fetch_entity):
+                            if (not b_do_unique_repeat_update):
+                                log.info("\n    >>--> [EXISTS] "
                                      "%s ." % (str(entity_proc)))
+                            else:
+                                # attr update value
+                                key_set = set(fetch_entity.to_json().keys())
+                                key_set = key_set - set(cls._entity_relation_fk_ref_db_attr_list)
+                                key_set = key_set - set(cls._entity_relation_ref_target_list)
+                                key_set = key_set - set(cls._unique_ser_key_list)
+                                
+                                for key in key_set:
+                                    setattr(fetch_entity, key, entity_proc.attr(key))
+                                rcd = cls.update(fetch_entity.id, fetch_entity)
+                                
                             continue
 
                     rcd = entity_proc.add()
