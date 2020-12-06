@@ -34,7 +34,7 @@ from mgutil.base import sub_feature_dict
 from mgutil.base import g_exclude_attrs_from_db_model
 from mgutil.base import attr_list
 from mgutil.deco import transaction
-from mgutil.file import mgf_match_ls_sub_names
+from mgutil.parser import mgf_match_ls_sub_names
 from mgutil.parser import file_basename_without_suffix
 
 # local
