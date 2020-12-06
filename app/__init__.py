@@ -23,14 +23,14 @@ from os import path
 
 # flask
 from flask import Flask
-from werkzeug import import_string
+from werkzeug.utils import import_string
 from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Api
 
 # util
 from mgutil.db import Mysql
 from mgutil.parser import mgt_c_yaml_object
-from mgutil.file import mgf_match_ls_sub_names
+from mgutil.parser import mgf_match_ls_sub_names
 
 
 # init PROJ_HOME_PATH & basic PYTHONPATH
