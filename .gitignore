@@ -17,12 +17,13 @@ upload/
 doc/
 log/
 
-# include file patterns
-!__init__.py
-
 # exclude file patterns
 *.py[cod]
 *$py.class
 *workspace
 .*
-gen_models.py
+gen_models.*
+
+# include file patterns
+!__init__.py
+!.gitignore

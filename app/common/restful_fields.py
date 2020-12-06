@@ -35,7 +35,11 @@ __all__ = [
     "NoEmptyStringField",
     "IntCombinedInStrField",
     "DateTimeStrField",
+    "DictStrField",
+    "result_json_encoder",
     "int_record_fields",
+    "str_record_fields",
+    "raw_record_fields",
 ]
 
 
