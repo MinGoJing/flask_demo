@@ -37,10 +37,13 @@ class APIException(HTTPException):
     # full environment data
     raw_data = None
     result_code = RET.E_UNEXPECTED
+    # language & error display
+    lan = 'en'
     msg = "Ops, API unexpected error occurs."
 
     def __init__(self, data=None, msg="", raw_data=None, lan="en"):
         self.data = data
+        self.lan = lan
         self.msg = "%s: %s" % (self._ret_cls.INFO(
             self.result_code, lan), self.msg)
         self._init_msg(data, msg)
@@ -94,6 +97,15 @@ class APIException(HTTPException):
         http_code = (hex_code >> 8) * 100 + \
             ((hex_code >> 4) & 0x0F) * 10 + (hex_code & 0x0F)
         return http_code
+
+
+class NoImplementationException(APIException):
+    """
+    @data : str
+        @str : Not implemented feature description
+    """
+    result_code = RET.E_NO_IMPL
+    msg = ('Feature <{}> NOT implemented yet.')
 
 
 class InvalidEntityClsException(APIException):
@@ -255,10 +267,43 @@ class DbEntityInitTableDataNotFoundException(APIException):
 
 class DBEntityRemoteReferenceNotMatchException(APIException):
     """
-    @data : str1, str2, str3
+    @data : (str1, str2, str3)
         @str1: local table name
         @str2: reference key
         @str3: value
     """
     result_code = RET.E_ENTITY_REFERENCE_KEY_ERROR
     msg = ('Entity<{}> reference key<{}> value<{}>, did NOT found remote entity to match.')
+
+
+class ExtJoinRuleSourceDBAttrNotFoundException(APIException):
+    """
+    @data : (str1, str2, str3)
+        @str1 : Source tablename
+        @str2 : Dist tablename
+        @str3 : Source db attribute name
+    """
+    result_code = RET.E_ENTITY_EXT_JOIN_RULE_CONFIG_ERROR
+    msg = ('External join rule <{}> ~ <{}>, source table attr<{}> NOT found. ')
+
+
+class ExtJoinRuleDistDBAttrNotFoundException(APIException):
+    """
+    @data : str1, str2, str3
+        @str1 : Source tablename
+        @str2 : Dist tablename
+        @str3 : Dist db attribute name
+    """
+    result_code = RET.E_ENTITY_EXT_JOIN_RULE_CONFIG_ERROR
+    msg = ('External join rule <{}> ~ <{}>, remote table attr<{}> NOT found. ')
+
+
+class ExtJoinRuleConstValueFormatErrorException(APIException):
+    """
+    @data : (str1, str2, str3)
+        @str1 : tablename
+        @str2 : db attribute name
+        @str3 : value description
+    """
+    result_code = RET.E_ORM_EXT_JOIN_RULE_CONST_VALUE_FORMAT_ERROR
+    msg = ('External join rule const attribute <{}.{}> value <{}> Error.')

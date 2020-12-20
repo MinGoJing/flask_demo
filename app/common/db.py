@@ -52,6 +52,10 @@ from .exception import EntityNotFoundException
 from .exception import DbEntityInitTableDataNotFoundException
 from .exception import InitProcessorNotFoundException
 from .exception import DBEntityRemoteReferenceNotMatchException
+from .exception import ExtJoinRuleSourceDBAttrNotFoundException
+from .exception import ExtJoinRuleDistDBAttrNotFoundException
+from .exception import NoImplementationException
+from .exception import ExtJoinRuleConstValueFormatErrorException
 
 # log
 import logging
@@ -708,11 +712,11 @@ class base_db_processor(mgt_c_object):
             if (remote_entity_db_attr_path in joined_remote_db_attr_map):
                 continue
             else:
-                # we support only one join rule yet
-                if (1 < len(join_attr_pairs)):
-                    data = "[%s] to [%s]" % (
-                        remote_entity_db_attr_path, str(join_attr_pairs[0]))
-                    raise QueryJoinRuleLengthNotSupportException(data)
+                # # we support only one join rule yet
+                # if (1 < len(join_attr_pairs)):
+                #     data = "[%s] to [%s]" % (
+                #         remote_entity_db_attr_path, str(join_attr_pairs[0]))
+                #     raise QueryJoinRuleLengthNotSupportException(data)
 
                 join_func = getattr(query, jointype, None)
                 if (not join_func):
@@ -739,11 +743,11 @@ def append_join(query, join_rule_list, joined_remote_db_attr_map):
         if (remote_entity_db_attr_path in joined_remote_db_attr_map):
             continue
         else:
-            # we support only one join rule yet
-            if (1 < len(join_attr_pairs)):
-                data = "[%s] to [%s]" % (
-                    remote_entity_db_attr_path, str(join_attr_pairs[0]))
-                raise QueryJoinRuleLengthNotSupportException(data)
+            # # we support only one join rule yet
+            # if (1 < len(join_attr_pairs)):
+            #     data = "[%s] to [%s]" % (
+            #         remote_entity_db_attr_path, str(join_attr_pairs[0]))
+            #     raise QueryJoinRuleLengthNotSupportException(data)
 
             join_func = getattr(query, jointype, None)
             if (not join_func):
@@ -793,9 +797,9 @@ def init_db_processors(processor_dir_path, module_name, init_submod_list=[],
     sub_modules = mgf_match_ls_sub_names(processor_dir_path,
                                          match_exp="^(?!_).+$",
                                          is_path_relative=True, match_opt=0)
-    if（not init_submod_list and b_do_init_processor_init):
+    if (not init_submod_list and b_do_init_processor_init):
         for mod in sub_modules:
-            mod_name=mod.split('.')[0]
+            mod_name = mod.split('.')[0]
             init_submod_list.append(mod_name)
 
     # init entity backref attrs
@@ -806,11 +810,11 @@ def init_db_processors(processor_dir_path, module_name, init_submod_list=[],
     # }
     for mod in sub_modules:
         # iterate db_processor
-        mod_name=mod.split('.')[0]
-        db_processor=import_string(
+        mod_name = mod.split('.')[0]
+        db_processor = import_string(
             "%s.%s:%s_processor" % (module_name, mod_name, mod_name))
         if (not db_processor):
-            msg=("Please define db_processor LIKE ${filename_base}_processor. "
+            msg = ("Please define db_processor LIKE ${filename_base}_processor. "
                    "We'll do some init for your db_processor.")
             raise Exception(msg)
         init_processor(db_processor, processor_map)
@@ -818,7 +822,7 @@ def init_db_processors(processor_dir_path, module_name, init_submod_list=[],
         if (init_submod_list is None):
             continue
         if (mod_name in init_submod_list or not init_submod_list):
-            db_init_processor=import_string(
+            db_init_processor = import_string(
                 "%s.%s:%s_init_processor" % (module_name, mod_name, mod_name))
             if (not db_init_processor):
                 msg = ("Please define db_processor LIKE ${filename_base}_init_processor. "
@@ -962,11 +966,11 @@ def parse_join_rule_n_attr_s(initial_entity_cls, key_list, processor_map):
                 RET.INFO(RET.E_ENTITY_AUTO_JOIN_FAILED), table_name, db_key))
             log.error(msg)
             raise EntityAutoJoinFailedException(local_table_db_key)
-        if (1 < len(local_remote_join_pairs)):
-            msg = "%s" % (
-                RET.INFO(RET.E_ORM_JOIN_RULE_LENGTH_NOT_SUPPORTED_ERROR))
-            log.error(msg)
-            raise QueryJoinRuleLengthNotSupportException(local_table_db_key)
+        # if (1 < len(local_remote_join_pairs)):
+        #     msg = "%s" % (
+        #         RET.INFO(RET.E_ORM_JOIN_RULE_LENGTH_NOT_SUPPORTED_ERROR))
+        #     log.error(msg)
+        #     raise QueryJoinRuleLengthNotSupportException(local_table_db_key)
 
         join_rule_list.append(
             (remote_entity_cls_key_path, remote_entity_cls,
@@ -1031,6 +1035,31 @@ def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key, p
 
             relation_pairs.append(
                 [local_table_key, local_attr, remote_table_key, remote_attr])
+
+            if (join_rule.get("other_rules")):
+                for local_db_attr, remote_db_attr in join_rule["other_rules"]:
+                    if (hasattr(entity_cls, local_db_attr)):
+                        ex_local_attr = getattr(entity_cls, local_db_attr)
+                    elif (local_db_attr.count(":")):
+                        ex_local_attr = _parse_const_join_attr(entity_cls.__tablename__,
+                                                               db_key, local_db_attr)
+                    else:
+                        raise ExtJoinRuleSourceDBAttrNotFoundException((entity_cls.__tablename__,
+                                                                        remote_entity_cls.__tablename__, db_key, remote_db_key))
+                    if (hasattr(remote_entity_cls, remote_table_key)):
+                        ex_remote_attr = getattr(
+                            remote_entity_cls, remote_db_attr)
+                    elif (remote_db_attr.count(":")):
+                        ex_local_attr = _parse_const_join_attr(remote_entity_cls.__tablename__,
+                                                               remote_table_key, remote_db_attr)
+                    else:
+                        raise ExtJoinRuleDistDBAttrNotFoundException((entity_cls.__tablename__,
+                                                                      remote_entity_cls.__tablename__, db_key, remote_db_key))
+                    relation_pairs.append(
+                        [local_db_attr, ex_local_attr,
+                            remote_db_attr, ex_remote_attr]
+                    )
+
         else:
             #
             join_relations = inspect(entity_cls).relationships
@@ -1067,6 +1096,29 @@ def parse_join_rule_with_single_remote_table(db_processor, entity_cls, db_key, p
         raise Exception()
 
     return remote_entity_cls, jointype, relation_pairs
+
+
+def _parse_const_join_attr(tablename, db_attr, const_value, splitter=":"):
+    #
+    try:
+        type_str, value_str = const_value.split(splitter)
+        if ("str" == type_str):
+            return value_str
+        elif ("int" == type_str):
+            return int(value_str)
+        elif ("float" == type_str):
+            return float(value_str)
+        elif ("bool" == type_str):
+            return bool(value_str)
+        elif ('datetime' == type_str):
+            return value_str
+        else:
+            raise NoImplementationException(
+                "Const %s value parse in external Join Rule" % (type_str))
+
+    except Exception as e:
+        raise ExtJoinRuleConstValueFormatErrorException(
+            (tablename, db_attr, const_value))
 
 
 class base_db_update_processor(base_db_processor):
@@ -1113,10 +1165,9 @@ class base_db_init_processor(base_db_processor):
     #   we should transform them 2 processor key
     _friend_key_2_key_dict = {}
 
-
     @classmethod
     def initialize(cls, table_2_datasheet_dict={}, b_db_datasheet=False,
-                   b_force_update=True, local_referenced_tables=[], 
+                   b_force_update=True, local_referenced_tables=[],
                    b_do_unique_repeat_update=False):
         # if initted, break
         table_name = cls.tablename()
@@ -1228,23 +1279,27 @@ class base_db_init_processor(base_db_processor):
                         fetch_p = {}
                         for key in cls._unique_user_key_list:
                             fetch_p[key] = entity_proc.attr(key)
-                            
+
                         fetch_entity = cls.fetch(fetch_p)
                         if (fetch_entity):
                             if (not b_do_unique_repeat_update):
                                 log.info("\n    >>--> [EXISTS] "
-                                     "%s ." % (str(entity_proc)))
+                                         "%s ." % (str(entity_proc)))
                             else:
                                 # attr update value
                                 key_set = set(fetch_entity.to_json().keys())
-                                key_set = key_set - set(cls._entity_relation_fk_ref_db_attr_list)
-                                key_set = key_set - set(cls._entity_relation_ref_target_list)
-                                key_set = key_set - set(cls._unique_ser_key_list)
-                                
+                                key_set = key_set - \
+                                    set(cls._entity_relation_fk_ref_db_attr_list)
+                                key_set = key_set - \
+                                    set(cls._entity_relation_ref_target_list)
+                                key_set = key_set - \
+                                    set(cls._unique_ser_key_list)
+
                                 for key in key_set:
-                                    setattr(fetch_entity, key, entity_proc.attr(key))
+                                    setattr(fetch_entity, key,
+                                            entity_proc.attr(key))
                                 rcd = cls.update(fetch_entity.id, fetch_entity)
-                                
+
                             continue
 
                     rcd = entity_proc.add()
