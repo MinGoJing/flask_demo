@@ -4,6 +4,6 @@ DBUtils==2.0
 flask_httpauth==4.0.0
 flask_restful==0.3.8
 flask_wtf==0.14.3
-PyYAML==5.3.1
+PyYAML==5.4
 Werkzeug==1.0.1
 mgutil==0.1.2
